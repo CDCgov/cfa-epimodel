@@ -1,0 +1,31 @@
+Package: epimodelcfa
+Type: Package
+Version: 0.1.0.0
+Title: Bespoke extentions to the EpiModel package for agent-based epidemic modeling using dynamic networks
+Description: Disease and project-specific modules for extending EpiModel functionality, plus additional functions for analysis and visualization.
+Author: Emily Pollock, PhD <ruu7@cdc.gov>
+Maintainer: Emily Pollock, PhD <ruu7@cdc.gov>
+License: Apache License (== 2.0)
+Depends:
+    R (>= 4.4.0),
+    EpiModel (>= 2.4.0)
+Imports:
+    network,
+    rlang,
+    tibble,
+    ggplot2,
+    dplyr,
+    tidyr,
+    yaml,
+    stats
+Suggests:
+    quarto,
+    testthat (>= 3.0.0),
+    withr
+VignetteBuilder: quarto
+RoxygenNote: 7.3.2
+Encoding: UTF-8
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+LazyData: true
+LazyDataCompression: xz
