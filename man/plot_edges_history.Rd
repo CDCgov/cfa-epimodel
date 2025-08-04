@@ -7,7 +7,8 @@
 plot_edges_history(x, network, type)
 }
 \arguments{
-\item{x}{Either a data frame containing the edges history (the output of \code{get_edges_history()}), or a simulation object of class \code{EpiModel::netsim}.
+\item{x}{Either a data frame containing the edges history (the output of \code{get_edges_history()}),
+or a simulation object of class \code{EpiModel::netsim}.
 If a simulation object is provided, edges history will be extracted using \code{get_edges_history()}.}
 
 \item{network}{A character string specifying the network type, either "main" or "casual".}
