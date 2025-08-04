@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(EpiModelSTI)
+library(epimodelcfa)
 
-test_check("EpiModelSTI")
+test_check("epimodelcfa")

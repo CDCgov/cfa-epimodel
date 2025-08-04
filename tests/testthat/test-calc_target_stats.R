@@ -1,7 +1,7 @@
 test_that("Calculate target stats", {
   # load data & generate init network
   params <- yaml::read_yaml(test_path("input", "full_nw_params_for_test.yaml"))
-  nw <- EpiModelSTI::generate_init_network(params, seed = 123)
+  nw <- epimodelcfa::generate_init_network(params, seed = 123)
 
   # Test that we get no errors in this simple case
   expect_no_error(calc_targets(nw = nw, params = params, rel = "main", count_type = "edges"))

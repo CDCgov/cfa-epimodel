@@ -199,21 +199,21 @@ calc_targets <- function(nw, params, rel, count_type,
   ## (currently assumes we use joint distribution to make edges calculations)
   ## get pop size, attribute vectors
   num <- network::network.size(nw)
-  attrs <- EpiModelSTI::get_nw_attr_vecs(nw)
+  attrs <- epimodelcfa::get_nw_attr_vecs(nw)
   joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
 
   # calculate expected nodefactor targets
-  nf_joint_counts <- EpiModelSTI::calc_joint_nodefactor(params, attrs, joint_attrs, joint_name, rel)
+  nf_joint_counts <- epimodelcfa::calc_joint_nodefactor(params, attrs, joint_attrs, joint_name, rel)
 
   # calculate expected total edges based on sum of nodefactor
-  edges <- EpiModelSTI::calc_edges(nf_joint_counts)
+  edges <- epimodelcfa::calc_edges(nf_joint_counts)
 
   if (count_type == "edges") {
     final_targets <- edges
   }
 
   if (count_type == "nodecov") {
-    final_targets <- EpiModelSTI::calc_nodecov_age(
+    final_targets <- epimodelcfa::calc_nodecov_age(
       params, rel, attr_name, edges,
       level, joint_attrs, nf_joint_counts, attr_squared
     )
@@ -221,19 +221,19 @@ calc_targets <- function(nw, params, rel, count_type,
 
   # if true, calc target for absdiff sqrt age
   if (count_type == "absdiff_sqrt_age") {
-    final_targets <- EpiModelSTI::calc_absdiff(params, rel, count_type, edges)
+    final_targets <- epimodelcfa::calc_absdiff(params, rel, count_type, edges)
   }
 
   if (count_type == "concurrent") {
     # calc number of people in rels
     # number of people with > 1 partners
-    final_targets <- EpiModelSTI::calc_concurrent(params, rel, num)
+    final_targets <- epimodelcfa::calc_concurrent(params, rel, num)
   }
 
   if (count_type == "cross_network") {
     # calc number of people in rels
     # number of people with > 1 partners
-    final_targets <- EpiModelSTI::calc_cross_network(params, rel)
+    final_targets <- epimodelcfa::calc_cross_network(params, rel)
   }
 
   # if true, calc nodefactor and then if true nodematch
@@ -242,7 +242,7 @@ calc_targets <- function(nw, params, rel, count_type,
       # targets for full joint distribution
       attr_targets <- as.numeric(nf_joint_counts)
     } else {
-      attr_targets <- EpiModelSTI::calc_single_attr_nodefactor(params, attr_name, joint_attrs, nf_joint_counts)
+      attr_targets <- epimodelcfa::calc_single_attr_nodefactor(params, attr_name, joint_attrs, nf_joint_counts)
     }
 
     # if nodefactor, leave targets as-is
@@ -251,17 +251,17 @@ calc_targets <- function(nw, params, rel, count_type,
     }
     # if nodematch, use nodefactor targets using nodefactor info
     if (count_type == "nodematch") {
-      final_targets <- EpiModelSTI::calc_nodematch(params, attr_name, attr_targets, rel, diff)
+      final_targets <- epimodelcfa::calc_nodematch(params, attr_name, attr_targets, rel, diff)
     }
   }
 
   # Check that these are reasonable targets
-  EpiModelSTI::check_targets(edges, final_targets, count_type)
+  epimodelcfa::check_targets(edges, final_targets, count_type)
 
   # Instantaneous Rel Correction
   ## correct for survey data reflecting number of one-times in last year
   if (rel == "inst" && isTRUE(inst_correct)) {
-    final_targets <- EpiModelSTI::inst_correction(final_targets, time_unit)
+    final_targets <- epimodelcfa::inst_correction(final_targets, time_unit)
   }
 
   # Output targets
