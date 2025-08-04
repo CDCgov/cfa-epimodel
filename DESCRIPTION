@@ -10,20 +10,14 @@ Depends:
     R (>= 4.4.0),
     EpiModel (>= 2.4.0)
 Imports:
-    tergm,
-    ergm (>= 4.3.1),
     network,
-    networkDynamic (>= 0.11.3),
-    statnet.common,
-    progressr,
-    networkLite (>= 1.0.1),
-    collections,
     rlang,
     tibble,
     ggplot2,
     dplyr,
     tidyr,
-    yaml
+    yaml,
+    stats
 Suggests:
     quarto,
     testthat (>= 3.0.0),

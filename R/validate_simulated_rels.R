@@ -2,7 +2,7 @@
 #' @description Extracts target degrees for main and casual networks from a YAML file. Currently assumes the YAML file
 #' includes sexual activity terms under "nodefactor" for each network stratified by a joint set of attributes,
 #' age and race, and description of attributes distributions under a sublist named "pop".
-#' @param target_yaml_file Path to the YAML file containing network targets.
+#' @param yaml_params_loc Path to the YAML file containing network targets.
 #' @param nets Character vector specifying which networks to extract targets for. Default is c("main", "casual").
 #' @param joint_attrs Character vector specifying the two joint attribute to extract targets for.
 #' Default is c("age", "race").
@@ -122,8 +122,8 @@ get_edges_history <- function(sim, nets = c("main", "casual")) {
 
 #' @title Plot Edges History
 #' @description Plots the edges history for a specified network and type of difference (absolute, percent, or edges).
-#' @param edges_df A data frame containing the edges history,
-#' typically obtained from `get_edges_history()`.
+#' @param x Either a data frame containing the edges history (the output of `get_edges_history()`), or a simulation object of class `EpiModel::netsim`.
+#' If a simulation object is provided, edges history will be extracted using `get_edges_history()`.
 #' @param network A character string specifying the network type, either "main" or "casual".
 #' @param type A character string specifying the type of difference to plot, either "percent", "absolute", or "edges".
 #' @return A ggplot object showing the edges history over time for the specified network and type.
@@ -153,8 +153,8 @@ plot_edges_history <- function(x, network, type) {
   }
 
   target_val <- edges_df |>
-    filter(net == network, diff_type == type) |>
-    pull(target) |>
+    filter(.data$net == network, .data$diff_type == type) |>
+    pull(.data$target) |>
     unique()
 
   edges_df |>
@@ -176,6 +176,11 @@ plot_edges_history <- function(x, network, type) {
 #' @param sim A simulation object of class `EpiModel::netsim`.
 #' @return A data frame summarizing the mean degree, interquartile range (IQR), and data source
 #' for each age and race combination
+#' @importFrom dplyr group_by summarize mutate
+#' @importFrom tidyr pivot_longer
+#' @importFrom rlang .data
+#' @importFrom EpiModel get_degree
+#' @importFrom stats quantile
 #' @export
 
 # frequency of rels by age in networks at end of simulation
@@ -196,25 +201,27 @@ summarize_final_degrees <- function(sim) {
   }
 
   sim_summary <- simdat |>
-    dplyr::group_by(sim, age, race) |>
-    dplyr::summarize( # calc mean degree by sim, age, race
-      main = mean(deg_main),
-      casual = mean(deg_cas),
+    # calc mean degree by sim, age, race
+    group_by(.data$sim, .data$age, .data$race) |>
+    summarize(
+      main = mean(.data$deg_main),
+      casual = mean(.data$deg_cas),
       .groups = "drop"
     ) |>
-    tidyr::pivot_longer(
+    pivot_longer(
       cols = c("main", "casual"),
       names_to = "type",
       values_to = "deg"
     ) |>
-    dplyr::group_by(age, race, type) |>
-    dplyr::summarize( # mean and sd of mean degree across sims
-      degree = mean(deg),
-      IQR1 = quantile(deg, 1 / 4),
-      IQR3 = quantile(deg, 3 / 4),
+    # mean and sd of mean degree across sims
+    group_by(.data$age, .data$race, .data$type) |>
+    summarize(
+      degree = mean(.data$deg),
+      IQR1 = quantile(.data$deg, 1 / 4),
+      IQR3 = quantile(.data$deg, 3 / 4),
       .groups = "drop"
     ) |>
-    dplyr::mutate(data = "simulated")
+    mutate(data = "simulated")
 }
 
 #' @title Plot Final Degrees for Main and Casual Networks
@@ -236,7 +243,7 @@ plot_final_degrees <- function(sim, network, yaml_params_loc) {
 
   s <- summarize_final_degrees(sim)
   t <- get_target_degrees_age_race(yaml_params_loc) |>
-    dplyr::mutate(IQR1 = degree, IQR3 = degree) # targets do not have IQRs
+    dplyr::mutate(IQR1 = .data$degree, IQR3 = .data$degree) # targets do not have IQRs
 
   y <- rbind(s, t)
 
@@ -258,6 +265,8 @@ plot_final_degrees <- function(sim, network, yaml_params_loc) {
 #' @return A data frame summarizing the target and simulated mean durations for each network,
 #' along with the standard deviation of the simulated durations.
 #' @importFrom yaml read_yaml
+#' @importFrom stats sd
+#' @importFrom network %n%
 #' @export
 get_mean_durations <- function(sim, nets = c("main", "casual"), yaml_params_loc) {
   x <- read_yaml(yaml_params_loc)
