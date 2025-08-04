@@ -54,7 +54,7 @@ generate_init_network <- function(
   ### sex variable
   # ensure that dist sums to 1
   if (sum(params$pop$female$dist) != 1) {
-    stop("Distrution of sex attribute must sum to 1")
+    stop("Distribution of sex attribute must sum to 1")
   }
   female <- rep(params$pop$female$levels, params$pop$female$dist * num)
   attr_values$female <- female
@@ -341,7 +341,7 @@ inst_correction <- function(targets, time_unit = NULL) {
   # if available time unit not specifed, return targets unmodified
   # assumes default target time_unit is a year
   if (is.null(time_unit) || !time_unit %in% c("weeks", "days")) {
-    warning("Specified time_unit not available, returning umodified targets.")
+    warning("Specified time_unit not available, returning unmodified targets.")
     unit_correction <- 1
   } else {
     if (time_unit == "weeks") {
