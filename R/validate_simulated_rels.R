@@ -122,7 +122,8 @@ get_edges_history <- function(sim, nets = c("main", "casual")) {
 
 #' @title Plot Edges History
 #' @description Plots the edges history for a specified network and type of difference (absolute, percent, or edges).
-#' @param x Either a data frame containing the edges history (the output of `get_edges_history()`), or a simulation object of class `EpiModel::netsim`.
+#' @param x Either a data frame containing the edges history (the output of `get_edges_history()`),
+#' or a simulation object of class `EpiModel::netsim`.
 #' If a simulation object is provided, edges history will be extracted using `get_edges_history()`.
 #' @param network A character string specifying the network type, either "main" or "casual".
 #' @param type A character string specifying the type of difference to plot, either "percent", "absolute", or "edges".
