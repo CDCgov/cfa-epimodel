@@ -1,6 +1,6 @@
 #' @title Updates to Network Attributes During Mpox Resimulation
 #'
-#' @description This function is updates the network-related degree attributes on the three-layer
+#' @description This function updates the network-related degree attributes on the three-layer
 #' MSM sexual network that account for the resimulated network structure.
 #'
 #' @inheritParams mod_aging

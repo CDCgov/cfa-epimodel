@@ -1,5 +1,5 @@
 test_that("correction for instantanous rel data collection modifies target correctly", {
-  # set targets for evalulation
+  # set targets for evaluation
   cuml_rels <- 500
   per_week_target <- cuml_rels / 52
   per_day_target <- cuml_rels / 365

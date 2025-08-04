@@ -22,7 +22,7 @@ get_target_degrees_age_race <- function(yaml_params_loc, nets = c("main", "casua
   }
 
   if (sum(joint_attrs == c("age", "race")) != 2) {
-    stop("Currently only race and race are supported as joint attributes, in that order.")
+    stop("Currently only age and race are supported as joint attributes, in that order.")
   }
 
   # Make sure the specified networks and attributes exist in the YAML file
