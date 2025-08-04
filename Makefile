@@ -6,6 +6,7 @@ ifndef IMAGE
 IMAGE := cfa-epimodel
 endif
 
+# user-specific non-default R library path
 lib_path := /home/RUU7/r_libs
 
 help:
