@@ -37,5 +37,4 @@ docs:
 check:
 	R CMD check .
 
-.PHONY: container_build container_run r_package_build r_package_install docs \
-	install
+.PHONY: help build install clean docs check
