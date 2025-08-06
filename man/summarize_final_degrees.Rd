@@ -4,10 +4,10 @@
 \alias{summarize_final_degrees}
 \title{Summarize Final Degrees from Simulation}
 \usage{
-summarize_final_degrees(sim)
+summarize_final_degrees(input, network)
 }
 \arguments{
-\item{sim}{A simulation object of class \code{EpiModel::netsim}.}
+\item{input}{An object of class \code{EpiModel::netest}, \code{EpiModel::netsim} or \code{EpiModel::netdx}.}
 }
 \value{
 A data frame summarizing the mean degree, interquartile range (IQR), and data source
@@ -16,4 +16,7 @@ for each age and race combination
 \description{
 Summarizes the final degrees of individuals in the main and casual networks
 at the end of the simulation and calculates the mean degree for each age and race combination.
+For \code{Epimodel::netest} objects, a network is simulated using the "newnetwork" slot as its basis.
+For \code{Epimodel::netdx} objects, data is extracted from the "tedgelist" (timed edgelist) slot.
+For \code{Epimodel::netsim} objects, data is extracted from the "network" slot.
 }

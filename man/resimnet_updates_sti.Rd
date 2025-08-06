@@ -15,7 +15,7 @@ resimnet_updates_sti(dat, at, network)
 networks).}
 }
 \description{
-This function is updates the network-related degree attributes on the three-layer
+This function updates the network-related degree attributes on the three-layer
 MSM sexual network that account for the resimulated network structure.
 }
 \details{

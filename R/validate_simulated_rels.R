@@ -67,7 +67,7 @@ get_target_degrees_age_race <- function(yaml_params_loc, nets = c("main", "casua
     mutate(data = "targets") |>
     pivot_longer(
       cols = c("main", "casual"),
-      names_to = "type",
+      names_to = "network",
       values_to = "degree"
     )
 }
@@ -174,7 +174,10 @@ plot_edges_history <- function(x, network, type) {
 #' @title Summarize Final Degrees from Simulation
 #' @description Summarizes the final degrees of individuals in the main and casual networks
 #' at the end of the simulation and calculates the mean degree for each age and race combination.
-#' @param sim A simulation object of class `EpiModel::netsim`.
+#' For `Epimodel::netest` objects, a network is simulated using the "newnetwork" slot as its basis.
+#' For `Epimodel::netdx` objects, data is extracted from the "tedgelist" (timed edgelist) slot.
+#' For `Epimodel::netsim` objects, data is extracted from the "network" slot.
+#' @param input An object of class `EpiModel::netest`, `EpiModel::netsim` or `EpiModel::netdx`.
 #' @return A data frame summarizing the mean degree, interquartile range (IQR), and data source
 #' for each age and race combination
 #' @importFrom dplyr group_by summarize mutate
@@ -185,50 +188,99 @@ plot_edges_history <- function(x, network, type) {
 #' @export
 
 # frequency of rels by age in networks at end of simulation
-summarize_final_degrees <- function(sim) {
-  simdat <- NULL
-  nsims <- sim$control$nsims
-
-  for (i in seq_len(nsims)) {
-    this_sim <- paste0("sim", i)
-    d <- data.frame(
-      age = floor(sim[["network"]][[this_sim]][[1]] %v% "age"),
-      race = sim[["network"]][[this_sim]][[1]] %v% "race",
-      deg_main = get_degree(sim[["network"]][[this_sim]][[1]]),
-      deg_cas = get_degree(sim[["network"]][[this_sim]][[2]]),
-      sim = this_sim
-    )
-    simdat <- rbind(simdat, d)
+summarize_final_degrees <- function(input, network) {
+  if (!inherits(input, "netsim") && !inherits(input, "netdx") && !inherits(input, "netest")) {
+    stop("input sim must be a netest, netdx, or netsim object.")
   }
 
-  sim_summary <- simdat |>
+  if (inherits(input, "netdx") && is.null(input$tedgelist)) {
+    stop("netdx object must contain simulated networks using option keep.tedgelist = TRUE.")
+  }
+
+  if (!network %in% c("main", "casual")) {
+    stop("network must be either 'main' or 'casual'.")
+  }
+
+  simdat <- NULL
+
+  # Extract final degrees from netsim object
+  if (inherits(input, "netsim")) {
+    nsims <- input$control$nsims
+    data_type <- "simulated"
+    net_position <- ifelse(network == "main", 1, 2)
+    for (i in seq_len(nsims)) {
+      this_sim <- paste0("sim", i)
+      d <- data.frame(
+        age = floor(input[["network"]][[this_sim]][[net_position]] %v% "age"),
+        race = input[["network"]][[this_sim]][[net_position]] %v% "race",
+        deg = get_degree(input[["network"]][[this_sim]][[net_position]]),
+        sim = this_sim
+      )
+      simdat <- rbind(simdat, d)
+    }
+  }
+  # Extract final degrees from netdx object
+  if (inherits(input, "netdx")) {
+    nsims <- input$nsims
+    data_type <- "netdx"
+    for (i in seq_len(nsims)) {
+      # convert timed edgelist to edgelist readable by EpiModel::get_degree()
+      el <- input$tedgelist[[i]]
+      active_el <- as.matrix(el[el$terminus.censored == TRUE, c("tail", "head")],
+        rownames.force = FALSE
+      )
+      attr(active_el, "n") <- network.size(input$nw)
+
+      d <- data.frame(
+        age = floor(input$nw %v% "age"),
+        race = input$nw %v% "race",
+        deg = get_degree(active_el),
+        sim = i
+      )
+      simdat <- rbind(simdat, d)
+    }
+  }
+  # Extract final degrees from netest object
+  if (inherits(input, "netest")) {
+    data_type <- "fitted"
+    nw <- simulate(
+      input$formula,
+      coef = input$coef.form.crude,
+      basis = input$newnetwork,
+      constraints = input$constraints,
+      control = control.simulate.formula(MCMC.prop = ~sparse, MCMC.burnin = 2e+05),
+      dynamic = FALSE
+    )
+    simdat <- data.frame(
+      age = floor(nw %v% "age"),
+      race = nw %v% "race",
+      deg = get_degree(nw),
+      sim = 1
+    )
+  }
+
+  simdat |>
     # calc mean degree by sim, age, race
     group_by(.data$sim, .data$age, .data$race) |>
     summarize(
-      main = mean(.data$deg_main),
-      casual = mean(.data$deg_cas),
+      mean_deg = mean(.data$deg, na.rm = TRUE),
       .groups = "drop"
     ) |>
-    pivot_longer(
-      cols = c("main", "casual"),
-      names_to = "type",
-      values_to = "deg"
-    ) |>
-    # mean and sd of mean degree across sims
-    group_by(.data$age, .data$race, .data$type) |>
+    # mean and IQR of mean degree across sims
+    group_by(.data$age, .data$race) |>
     summarize(
-      degree = mean(.data$deg),
-      IQR1 = quantile(.data$deg, 1 / 4),
-      IQR3 = quantile(.data$deg, 3 / 4),
+      degree = mean(.data$mean_deg),
+      IQR1 = quantile(.data$mean_deg, 1 / 4),
+      IQR3 = quantile(.data$mean_deg, 3 / 4),
       .groups = "drop"
     ) |>
-    mutate(data = "simulated")
+    mutate(data = !!data_type, network = !!network)
 }
 
 #' @title Plot Final Degrees for Main and Casual Networks
 #' @description Plots the final degrees of individuals in the main and casual networks summarized across simulations
 #' and compares them to target degrees extracted from a YAML file.
-#' @param sim A simulation object of class `EpiModel::netsim`.
+#' @param input A simulation object of class `EpiModel::netsim` or `EpiModel::netdx`.
 #' @param network A character string specifying the network type, either "main" or "casual".
 #' @param yaml_params_loc Path to the YAML file containing target degrees.
 #' @return A ggplot object showing the final degrees for the specified network type,
@@ -237,19 +289,19 @@ summarize_final_degrees <- function(sim) {
 #' @importFrom dplyr filter mutate
 #' @importFrom rlang .data
 #' @export
-plot_final_degrees <- function(sim, network, yaml_params_loc) {
+plot_final_degrees <- function(input, network, yaml_params_loc) {
   if (!network %in% c("main", "casual")) {
     stop("network must be either 'main' or 'casual'.")
   }
 
-  s <- summarize_final_degrees(sim)
+  s <- summarize_final_degrees(input, network)
   t <- get_target_degrees_age_race(yaml_params_loc) |>
-    dplyr::mutate(IQR1 = .data$degree, IQR3 = .data$degree) # targets do not have IQRs
+    dplyr::mutate(IQR1 = .data$degree, IQR3 = .data$degree) |> # targets do not have IQRs
+    dplyr::filter(.data$network == !!network)
 
   y <- rbind(s, t)
 
   y |>
-    dplyr::filter(.data$type == network) |>
     ggplot2::ggplot(ggplot2::aes(x = .data$age, y = .data$degree, color = .data$data)) +
     ggplot2::geom_point() +
     ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$IQR1, ymax = .data$IQR3), width = 0.2) +
