@@ -21,6 +21,7 @@ help:
 	@echo "  clean             : Deletes epimodelcfa_*tar*gz files."
 	@echo "  docs              : Runs devtools::document() within the package."
 	@echo "  check             : Runs R CMD check on the package."
+	@echo "  bic               : Builds, installs, and cleans the package."
 	@echo ""
 
 build: clean
@@ -33,9 +34,11 @@ clean:
 	rm -f epimodelcfa_*tar.gz
 
 docs:
-	Rscript -e 'devtools::document()'
+	Rscript -e 'roxygen2::roxygenize()'
 
 check:
 	R CMD check .
 
-.PHONY: help build install clean docs check
+bic: build install clean
+
+.PHONY: help install clean docs check
