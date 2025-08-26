@@ -16,7 +16,7 @@ for each age and race combination
 \description{
 Summarizes the final degrees of individuals in the main and casual networks
 at the end of the simulation and calculates the mean degree for each age and race combination.
-For \code{Epimodel::netest} objects, a network is simulated using the "newnetwork" slot as its basis.
-For \code{Epimodel::netdx} objects, data is extracted from the "tedgelist" (timed edgelist) slot.
-For \code{Epimodel::netsim} objects, data is extracted from the "network" slot.
+For \code{EpiModel::netest} objects, a network is simulated using the "newnetwork" slot as its basis.
+For \code{EpiModel::netdx} objects, data is extracted from the "tedgelist" (timed edgelist) slot.
+For \code{EpiModel::netsim} objects, data is extracted from the "network" slot.
 }

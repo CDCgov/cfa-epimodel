@@ -34,11 +34,11 @@ clean:
 	rm -f epimodelcfa_*tar.gz
 
 docs:
-	Rscript -e 'roxygen2::roxygenize()'
+	Rscript -e 'devtools::document()'
 
 check:
 	R CMD check .
 
 bic: build install clean
 
-.PHONY: help install clean docs check
+.PHONY: help install clean docs check build bic
