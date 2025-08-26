@@ -6,8 +6,11 @@
 #' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param append_core_attr append_attr
 #' get_edgelist apportion_lr
 #'
-#' @export
+#' @name vitals
+NULL
 
+#' @rdname vitals
+#' @export
 mod_aging <- function(dat, at) {
   # Calc Updated Age Attributes
   age <- get_attr(dat, "age")
@@ -34,7 +37,8 @@ mod_aging <- function(dat, at) {
 }
 
 # Departures Module ----------------------------------------------------
-
+#' @rdname vitals
+#' @export
 mod_departures <- function(dat, at) {
   ## Attributes
   active <- get_attr(dat, "active")
@@ -91,13 +95,13 @@ mod_departures <- function(dat, at) {
 
 
 # Arrivals Module ----------------------------------------------------
-
+#' @rdname vitals
+#' @export
 mod_arrivals <- function(dat, at) {
   ## Parameters
   n <- sum(get_attr(dat, "active") == 1)
   aType <- get_param(dat, "arrivalType")
   entryAge <- get_param(dat, "entryAge")
-  femaleAgeAdj <- get_param(dat, "entryFemaleAgeAdj")
   femaleProb <- get_param(dat, "entryFemaleProb")
   raceNames <- get_param(dat, "entryRaceNames")
   raceProbs <- get_param(dat, "entryRaceProbs")

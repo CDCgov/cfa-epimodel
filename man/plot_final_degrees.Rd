@@ -4,10 +4,10 @@
 \alias{plot_final_degrees}
 \title{Plot Final Degrees for Main and Casual Networks}
 \usage{
-plot_final_degrees(sim, network, yaml_params_loc)
+plot_final_degrees(input, network, yaml_params_loc)
 }
 \arguments{
-\item{sim}{A simulation object of class \code{EpiModel::netsim}.}
+\item{input}{A simulation object of class \code{EpiModel::netsim} or \code{EpiModel::netdx}.}
 
 \item{network}{A character string specifying the network type, either "main" or "casual".}
 

@@ -10,6 +10,7 @@ Depends:
     R (>= 4.4.0),
     EpiModel (>= 2.4.0)
 Imports:
+    ergm,
     network,
     rlang,
     tibble,
@@ -17,7 +18,8 @@ Imports:
     dplyr,
     tidyr,
     yaml,
-    stats
+    stats,
+    viridis
 Suggests:
     quarto,
     testthat (>= 3.0.0),
