@@ -128,9 +128,10 @@ get_edges_history <- function(sim, nets = c("main", "casual")) {
 #' @param network A character string specifying the network type, either "main" or "casual".
 #' @param type A character string specifying the type of difference to plot, either "percent", "absolute", or "edges".
 #' @return A ggplot object showing the edges history over time for the specified network and type.
-#' @importFrom ggplot2 ggplot aes geom_line geom_hline labs
+#' @importFrom ggplot2 ggplot aes geom_line geom_hline labs theme
 #' @importFrom dplyr filter pull
 #' @importFrom rlang .data
+#' @importFrom viridis scale_color_viridis
 #' @export
 plot_edges_history <- function(x, network, type) {
   if (!class(x) %in% c("netsim", "data.frame")) {
@@ -160,15 +161,18 @@ plot_edges_history <- function(x, network, type) {
 
   edges_df |>
     filter(.data$net == network, .data$diff_type == type) |>
+    mutate(sim = as.factor(.data$sim)) |>
     ggplot(aes(x = .data$time, y = .data$diff, color = .data$sim)) +
-    geom_line() +
-    geom_line(aes(y = .data$mean), color = "black", linewidth = 1) +
+    geom_line(alpha = 0.5) +
+    geom_line(aes(y = .data$mean), color = "black", linewidth = 3) +
     geom_hline(aes(yintercept = target_val)) +
     labs(
       title = paste("Edges history for ", network, " network (", type, ")", sep = ""),
       y = paste(type, "difference"),
       x = "time"
-    )
+    ) +
+    scale_color_viridis(discrete = TRUE) +
+    theme(legend.position = "none")
 }
 
 #' @title Summarize Final Degrees from Simulation
@@ -185,6 +189,9 @@ plot_edges_history <- function(x, network, type) {
 #' @importFrom rlang .data
 #' @importFrom EpiModel get_degree
 #' @importFrom stats quantile
+#' @importFrom network %v% network.size
+#' @importFrom ergm control.simulate.formula
+#' @importFrom stats simulate
 #' @export
 
 # frequency of rels by age in networks at end of simulation
@@ -302,10 +309,10 @@ plot_final_degrees <- function(input, network, yaml_params_loc) {
   y <- rbind(s, t)
 
   y |>
-    ggplot2::ggplot(ggplot2::aes(x = .data$age, y = .data$degree, color = .data$data)) +
-    ggplot2::geom_point() +
-    ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$IQR1, ymax = .data$IQR3), width = 0.2) +
-    ggplot2::facet_wrap(~ .data$race)
+    ggplot(aes(x = .data$age, y = .data$degree, color = .data$data)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = .data$IQR1, ymax = .data$IQR3), width = 0.2) +
+    facet_wrap(~ .data$race)
 }
 
 
