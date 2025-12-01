@@ -36,6 +36,7 @@ mod_aging <- function(dat, at) {
     ## Summary statistics ##
     dat <- set_epi(dat, "meanAge", at, mean(age, na.rm = TRUE))
   }
+  # Return
   dat
 }
 
@@ -56,7 +57,7 @@ mod_departures <- function(dat, at) {
 
     ## Query alive but past simulation age range
     ## this setup a little odd make it easier to include ASMR later
-    idsElig <- which(active == 1 & ceiling(age) >= exitAge + 1)
+    idsElig <- which(active == 1 & ceiling(age) >= exitAge)
     nElig <- length(idsElig)
     nDepts <- 0
 
@@ -90,10 +91,12 @@ mod_departures <- function(dat, at) {
 
     ## Summary statistics
     dat <- set_epi(dat, "d.flow", at, nDepts)
-    dat <- set_epi(dat, "edges_main", at, nrow(dat$run$el[[1]]))
-    dat <- set_epi(dat, "edges_casual", at, nrow(dat$run$el[[2]]))
-    dat <- set_epi(dat, "edges_inst", at, nrow(dat$run$el[[3]]))
+    ### track number of edges in each network
+    for (i in seq_along(dat$run$el)) {
+      dat <- set_epi(dat, paste0("edges_net", i), at, nrow(dat$run$el[[i]]))
+    }
   }
+  # Return
   dat
 }
 
@@ -149,5 +152,6 @@ mod_arrivals <- function(dat, at) {
     ## Summary statistics
     dat <- set_epi(dat, "a.flow", at, nArrivals)
   }
+  # Return
   dat
 }
