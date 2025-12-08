@@ -17,7 +17,7 @@ fit <- EpiModel::netest(nw,
 test_that("mod_aging updates age and age_group correctly, arrivalType = departures returns static pop size", {
   # 1 time step = 1 year, to speed aging processes
   params <- EpiModel::param.net(
-    vital_dynamics = TRUE, units_per_year = 1,
+    units_per_year = 1,
     exitAge = 50, entryAge = 15, arrivalType = "departures",
     entryFemaleProb = 0.5, entryRaceNames = c("A", "B"),
     entryRaceProbs = c(0.6, 0.4)
