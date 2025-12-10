@@ -131,10 +131,16 @@ mod_arrivals <- function(dat, at) {
 
   if (nArrivals > 0) {
     ## Determine sex, race
-    arrivalSex <- stats::rbinom(nArrivals, 1, femaleProb)
-    arrivalRace <- apportion_lr(nArrivals, raceNames, raceProbs)
+    if (nArrivals == 1) {
+      arrivalSex <- sample(c(0, 1), 1, prob = c(1 - femaleProb, femaleProb))
+      arrivalRace <- sample(raceNames, 1, prob = raceProbs)
+    } else { # use base EpiModel apportion_lr function if nArrivals > 1
+      arrivalSex <- apportion_lr(nArrivals, c(0, 1), c(1 - femaleProb, femaleProb))
+      arrivalRace <- apportion_lr(nArrivals, raceNames, raceProbs)
+    }
 
-    ## Update attributes
+
+    ## Update attributes for new arrivals
     dat <- append_core_attr(dat, at, nArrivals)
     dat <- append_attr(dat, "status", "s", nArrivals)
     dat <- append_attr(dat, "infTime", NA, nArrivals)
