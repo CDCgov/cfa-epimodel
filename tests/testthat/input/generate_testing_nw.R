@@ -1,5 +1,5 @@
 # generate nw and fit object for testing
-# current required attributes: age, age_group,olderpartner, female, race
+# current required attributes: age, age_group, olderpartner, female, race
 # number of edges and duration are arbitrary
 size <- 100
 age_vec <- seq_len(size) + 18

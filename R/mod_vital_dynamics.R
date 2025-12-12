@@ -27,7 +27,6 @@ mod_aging <- function(dat, at) {
   # Update age and age_group vectors
   age <- age + (1 / units)
   ngrps <- ceiling((exitAge - entryAge) / age_group_width)
-  # age groups: 0-19,20-24,25-29,30-34,35-39,40-44,45+, hardcoded
   for (i in seq_len(ngrps)) {
     nodes_in_group <- which(
       age >= (entryAge + (age_group_width * (i - 1))) &
