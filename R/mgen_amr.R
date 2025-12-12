@@ -2,7 +2,7 @@
 #'
 #' @description either due to treatment or spontaneously(?)
 #'
-#' @inheritParams initialize_mgen
+#' @inheritParams mod_sti_initialize
 #'
 #' @export
 

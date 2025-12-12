@@ -6,11 +6,6 @@
 \usage{
 tx_mgen(dat, at)
 }
-\arguments{
-\item{dat}{simulation object}
-
-\item{at}{time step}
-}
 \description{
 treatment of mgen
 }

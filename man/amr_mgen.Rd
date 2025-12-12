@@ -6,11 +6,6 @@
 \usage{
 amr_mgen(dat, at)
 }
-\arguments{
-\item{dat}{simulation object}
-
-\item{at}{time step}
-}
 \description{
 either due to treatment or spontaneously(?)
 }

@@ -2,7 +2,7 @@
 #'
 #' @description Handles node aging, departure, and arrivals
 #'
-#' @inheritParams initialize_mgen
+#' @inheritParams mod_sti_initialize
 #' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param append_core_attr append_attr
 #' get_edgelist apportion_lr
 #'

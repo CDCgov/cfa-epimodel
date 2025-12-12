@@ -13,11 +13,6 @@ mod_departures(dat, at)
 
 mod_arrivals(dat, at)
 }
-\arguments{
-\item{dat}{simulation object}
-
-\item{at}{time step}
-}
 \description{
 Handles node aging, departure, and arrivals
 }

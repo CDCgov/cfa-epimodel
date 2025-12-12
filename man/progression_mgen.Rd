@@ -6,11 +6,6 @@
 \usage{
 progression_mgen(dat, at)
 }
-\arguments{
-\item{dat}{simulation object}
-
-\item{at}{time step}
-}
 \description{
 Mgen disease progression
 }
