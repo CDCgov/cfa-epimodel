@@ -16,6 +16,7 @@ mod_aging <- function(dat, at) {
   age <- get_attr(dat, "age")
   units <- get_param(dat, "units_per_year")
   age <- age + (1 / units)
+  # age groups: 0-19,20-24,25-29,30-34,35-39,40-44,45+, hardcoded
   age_group <- dplyr::case_when(
     age < 20 ~ 1,
     age >= 20 & age < 25 ~ 2,
@@ -33,6 +34,8 @@ mod_aging <- function(dat, at) {
 
   ## Summary statistics ##
   dat <- set_epi(dat, "meanAge", at, mean(age, na.rm = TRUE))
+
+  # Return
   dat
 }
 
@@ -52,7 +55,7 @@ mod_departures <- function(dat, at) {
 
   ## Query alive but past simulation age range
   ## this setup a little odd make it easier to include ASMR later
-  idsElig <- which(active == 1 & ceiling(age) >= exitAge + 1)
+  idsElig <- which(active == 1 & ceiling(age) >= exitAge)
   nElig <- length(idsElig)
   nDepts <- 0
 
@@ -86,10 +89,12 @@ mod_departures <- function(dat, at) {
 
   ## Summary statistics
   dat <- set_epi(dat, "d.flow", at, nDepts)
-  dat <- set_epi(dat, "edges_main", at, nrow(dat$run$el[[1]]))
-  dat <- set_epi(dat, "edges_casual", at, nrow(dat$run$el[[2]]))
-  dat <- set_epi(dat, "edges_inst", at, nrow(dat$run$el[[3]]))
+  ### track number of edges in each network
+  for (i in seq_along(dat$run$el)) {
+    dat <- set_epi(dat, paste0("edges_net", i), at, nrow(dat$run$el[[i]]))
+  }
 
+  # Return
   dat
 }
 
@@ -126,10 +131,16 @@ mod_arrivals <- function(dat, at) {
 
   if (nArrivals > 0) {
     ## Determine sex, race
-    arrivalSex <- stats::rbinom(nArrivals, 1, femaleProb)
-    arrivalRace <- apportion_lr(nArrivals, raceNames, raceProbs)
+    if (nArrivals == 1) {
+      arrivalSex <- sample(c(0, 1), 1, prob = c(1 - femaleProb, femaleProb))
+      arrivalRace <- sample(raceNames, 1, prob = raceProbs)
+    } else { # use base EpiModel apportion_lr function if nArrivals > 1
+      arrivalSex <- apportion_lr(nArrivals, c(0, 1), c(1 - femaleProb, femaleProb))
+      arrivalRace <- apportion_lr(nArrivals, raceNames, raceProbs)
+    }
 
-    ## Update attributes
+
+    ## Update attributes for new arrivals
     dat <- append_core_attr(dat, at, nArrivals)
     dat <- append_attr(dat, "status", "s", nArrivals)
     dat <- append_attr(dat, "infTime", NA, nArrivals)
@@ -144,5 +155,6 @@ mod_arrivals <- function(dat, at) {
   ## Summary statistics
   dat <- set_epi(dat, "a.flow", at, nArrivals)
 
+  # Return
   dat
 }
