@@ -34,7 +34,7 @@ controls_aging <- EpiModel::control.net(
   save.other = c("attr")
 )
 controls_all_vitals <- EpiModel::control.net(
-  nsims = 1, nsteps = 30, # longer time to allow for aging out and new arrtivals
+  nsims = 1, nsteps = 30, # longer time to allow for aging out and new arrivals
   arrivals.FUN = mod_arrivals,
   departures.FUN = mod_departures,
   aging.FUN = mod_aging,
