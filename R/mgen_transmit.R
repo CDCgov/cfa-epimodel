@@ -34,7 +34,7 @@ mod_infection <- function(dat, at) {
   if (!(length(act.rate) == 1 || length(act.rate) == n_age_groups)) {
     msg <- paste0(
       "act.rate parameter length must be either 1 or equal to the number of age groups in the population. ",
-      "act.rate parameter length: ", length(act.rate), 
+      "act.rate parameter length: ", length(act.rate),
       "; number of age groups in population: ", n_age_groups, "."
     )
     stop(msg)
