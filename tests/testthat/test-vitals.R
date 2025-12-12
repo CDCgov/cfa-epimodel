@@ -1,25 +1,16 @@
-# generate nw and fit object for testing
-# current required attributes: age, olderpartner, female, race
-# number of edges and duration are arbitrary
-size <- 100
-nw <- network::network.initialize(size, directed = FALSE)
-nw <- network::set.vertex.attribute(nw, "age", seq_len(size) + 18)
-nw <- network::set.vertex.attribute(nw, "olderpartner", rbinom(size, 1, 0.2))
-nw <- network::set.vertex.attribute(nw, "female", rbinom(size, 1, 0.5))
-nw <- network::set.vertex.attribute(nw, "race", apportion_lr(size, c("A", "B"), c(0.6, 0.4)))
-fit <- EpiModel::netest(nw,
-  formation = ~edges,
-  target.stats = 15,
-  coef.diss = dissolution_coefs(~ offset(edges), 10),
-  edapprox = TRUE
-)
+# Load test netest fit object
+fit <- readRDS(test_path("input", "test_nw.RDS"))
+# Extract network for attribute checks below
+nw <- fit$newnetwork
 
 # Prep input functions
 ## 1 time step = 1 year, to speed aging processes
 ## Parameters
 params <- EpiModel::param.net(
   units_per_year = 1,
-  exitAge = 50, entryAge = 15, arrivalType = "departures",
+  exitAge = 50, entryAge = 15,
+  age_group_width = 5,
+  arrivalType = "departures",
   entryFemaleProb = 0.5, entryRaceNames = c("A", "B"),
   entryRaceProbs = c(0.6, 0.4)
 )

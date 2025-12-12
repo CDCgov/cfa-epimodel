@@ -2,7 +2,7 @@
 #'
 #' @description treatment of mgen
 #'
-#' @inheritParams initialize_mgen
+#' @inheritParams vitals
 #'
 #' @export
 

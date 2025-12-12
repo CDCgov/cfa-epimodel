@@ -1,13 +1,13 @@
-#' @title Model Mgen Infection between Partners
+#' @title Model Infection between Partners
 #'
-#' @description Disease transmission
+#' @description Disease transmission module accounting for age-specific activity rates
 #'
-#' @inheritParams initialize_mgen
+#' @inheritParams vitals
 #' @importFrom EpiModel get_attr set_attr set_epi get_param set_transmat discord_edgelist
 #'
 #' @export
 
-mgen_infection <- function(dat, at) {
+mod_infection <- function(dat, at) {
   # Notes
   ## for now:
   ## - no age/rel difference in act rates
@@ -20,6 +20,7 @@ mgen_infection <- function(dat, at) {
   infTime <- get_attr(dat, "infTime")
   status <- get_attr(dat, "status")
   female <- get_attr(dat, "female")
+  age_group <- get_attr(dat, "age_group")
 
   infProbMTF <- get_param(dat, "infProbMTF")
   infProbFTM <- get_param(dat, "infProbFTM")
@@ -27,6 +28,17 @@ mgen_infection <- function(dat, at) {
 
   inter.eff <- get_param(dat, "inter.eff")
   inter.start <- get_param(dat, "inter.start")
+
+  # Check that act.rate length is valid
+  n_age_groups <- length(unique(age_group[active == 1]))
+  if (!(length(act.rate) == 1 || length(act.rate) == n_age_groups)) {
+    msg <- paste0(
+      "act.rate parameter length must be either 1 or equal to the number of age groups in the population. ",
+      "act.rate parameter length: ", length(act.rate),
+      "; number of age groups in population: ", n_age_groups, "."
+    )
+    stop(msg)
+  }
 
   # Vector of infected and susceptible IDs
   idsInf <- which(active == 1 & status == "i")
