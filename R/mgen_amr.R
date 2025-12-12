@@ -2,7 +2,7 @@
 #'
 #' @description either due to treatment or spontaneously(?)
 #'
-#' @inheritParams mod_sti_initialize
+#' @inheritParams vitals
 #'
 #' @export
 

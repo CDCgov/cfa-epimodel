@@ -2,7 +2,7 @@
 #'
 #' @description treatment of mgen
 #'
-#' @inheritParams mod_sti_initialize
+#' @inheritParams vitals
 #'
 #' @export
 

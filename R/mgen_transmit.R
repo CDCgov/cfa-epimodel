@@ -2,7 +2,7 @@
 #'
 #' @description Disease transmission module accounting for age-specific activity rates
 #'
-#' @inheritParams mod_sti_initialize
+#' @inheritParams vitals
 #' @importFrom EpiModel get_attr set_attr set_epi get_param set_transmat discord_edgelist
 #'
 #' @export

@@ -21,9 +21,9 @@
 #'
 #' @return A \code{netsim_dat} class main data object.
 #'
-#' @export
-#' @keywords internal
-#'
+#' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param append_core_attr append_attr
+#' get_edgelist init_status.net create_dat_object init_nets sim_nets_t1 summary_nets
+#' padded_vector get_control get_attr_prop set_param
 #' @export
 
 mod_sti_initialize <- function(x, param, init, control, s) {

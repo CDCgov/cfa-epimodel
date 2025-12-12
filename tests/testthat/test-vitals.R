@@ -1,5 +1,7 @@
-# Load test network fit object
+# Load test netest fit object
 fit <- readRDS(test_path("input", "test_nw.RDS"))
+# Extract network for attribute checks below
+nw <- fit$newnetwork
 
 # Prep input functions
 ## 1 time step = 1 year, to speed aging processes

@@ -35,4 +35,3 @@ When re-initializing a simulation, the \code{netsim} object passed
 to \code{initialize.net} must contain the elements \code{param},
 \code{nwparam}, \code{epi}, \code{coef.form}, and \code{num.nw}.
 }
-\keyword{internal}

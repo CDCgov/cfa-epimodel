@@ -2,7 +2,7 @@
 #'
 #' @description Regular screening and symptomatic testing
 #'
-#' @inheritParams mod_sti_initialize
+#' @inheritParams vitals
 #'
 #' @export
 

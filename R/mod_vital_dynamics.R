@@ -2,7 +2,11 @@
 #'
 #' @description Handles node aging, departure, and arrivals
 #'
-#' @inheritParams mod_sti_initialize
+#' @param dat Main \code{netsim_dat} object containing a \code{networkDynamic}
+#'        object and other initialization information passed from
+#'        \code{\link{netsim}}.
+#' @param at Current time step.
+#'
 #' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param append_core_attr append_attr
 #' get_edgelist apportion_lr
 #'

@@ -3,7 +3,7 @@
 #' @description This function updates the network-related degree attributes on the three-layer
 #' MSM sexual network that account for the resimulated network structure.
 #'
-#' @inheritParams mod_aging
+#' @inheritParams vitals
 #' @param network Integer for network number (values 1, 2, or 3 for main, casual, and one-time
 #'                networks).
 #'

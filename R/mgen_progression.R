@@ -2,7 +2,7 @@
 #'
 #' @description Mgen disease progression
 #'
-#' @inheritParams mod_sti_initialize
+#' @inheritParams vitals
 #'
 #' @export
 
