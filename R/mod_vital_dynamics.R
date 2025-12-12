@@ -14,22 +14,26 @@ NULL
 mod_aging <- function(dat, at) {
   # Calc Updated Age Attributes
   age <- get_attr(dat, "age")
+  age_group <- get_attr(dat, "age_group")
+  age_group_width <- get_param(dat, "age_group_width")
+  entryAge <- get_param(dat, "entryAge")
+  exitAge <- get_param(dat, "exitAge")
   units <- get_param(dat, "units_per_year")
+
+  # Update age and age_group vectors
   age <- age + (1 / units)
+  ngrps <- ceiling((exitAge - entryAge) / age_group_width)
   # age groups: 0-19,20-24,25-29,30-34,35-39,40-44,45+, hardcoded
-  age_group <- dplyr::case_when(
-    age < 20 ~ 1,
-    age >= 20 & age < 25 ~ 2,
-    age >= 25 & age < 30 ~ 3,
-    age >= 30 & age < 35 ~ 4,
-    age >= 35 & age < 40 ~ 5,
-    age >= 40 & age < 45 ~ 6,
-    age >= 45 ~ 7
-  )
+  for (i in seq_len(ngrps)) {
+    nodes_in_group <- which(
+      age >= (entryAge + (age_group_width * (i - 1))) &
+        age < (entryAge + (age_group_width * i))
+    )
+    age_group[nodes_in_group] <- i
+  }
 
   # Update Attributes
   dat <- set_attr(dat, "age", age)
-  dat <- set_attr(dat, "agesq", age^2)
   dat <- set_attr(dat, "age_group", age_group)
 
   ## Summary statistics ##
@@ -145,7 +149,6 @@ mod_arrivals <- function(dat, at) {
     dat <- append_attr(dat, "status", "s", nArrivals)
     dat <- append_attr(dat, "infTime", NA, nArrivals)
     dat <- append_attr(dat, "age", entryAge, nArrivals)
-    dat <- append_attr(dat, "agesq", entryAge^2, nArrivals)
     dat <- append_attr(dat, "age_group", 1, nArrivals)
     dat <- append_attr(dat, "race", arrivalRace, nArrivals)
     dat <- append_attr(dat, "female", arrivalSex, nArrivals)
