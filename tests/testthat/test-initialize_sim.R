@@ -22,7 +22,8 @@ inits <- EpiModel::init.net(i.num = 5)
 ## Control Settings & Modules
 controls <- EpiModel::control.net(
   nsims = 1, nsteps = 1,
-  initialize.FUN = mod_sti_initialize
+  initialize.FUN = mod_sti_initialize,
+  verbose = FALSE
 )
 
 test_that("mod_sti_initialize throws error if required nodal attributes are missing", {

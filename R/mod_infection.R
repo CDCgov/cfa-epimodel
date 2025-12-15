@@ -26,18 +26,12 @@ mod_infection <- function(dat, at) {
   infProbFTM <- get_param(dat, "infProbFTM")
   act.rate <- get_param(dat, "act.rate")
 
-  inter.eff <- get_param(dat, "inter.eff")
-  inter.start <- get_param(dat, "inter.start")
-
   # Check that act.rate length is valid
   n_age_groups <- length(unique(age_group[active == 1]))
   if (!(length(act.rate) == 1 || length(act.rate) == n_age_groups)) {
-    msg <- paste0(
-      "act.rate parameter length must be either 1 or equal to the number of age groups in the population. ",
-      "act.rate parameter length: ", length(act.rate),
-      "; number of age groups in population: ", n_age_groups, "."
+    stop("act.rate parameter length must be either 1 or equal to the number of age groups in the population. ",
+      call. = FALSE
     )
-    stop(msg)
   }
 
   # Vector of infected and susceptible IDs
@@ -81,11 +75,6 @@ mod_infection <- function(dat, at) {
             infProbFTM[linf.prob]
           )
         )
-      }
-
-      # Interventions
-      if (!is.null(inter.eff) && at >= inter.start) {
-        del$transProb <- del$transProb * (1 - inter.eff)
       }
 
       # Calculate infection-stage act/contact rates

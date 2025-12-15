@@ -22,14 +22,16 @@ inits <- EpiModel::init.net(i.num = 5)
 controls_aging <- EpiModel::control.net(
   nsims = 1, nsteps = 10,
   aging.FUN = mod_aging,
-  save.other = c("attr")
+  save.other = c("attr"),
+  verbose = FALSE
 )
 controls_all_vitals <- EpiModel::control.net(
   nsims = 1, nsteps = 30, # longer time to allow for aging out and new arrivals
   arrivals.FUN = mod_arrivals,
   departures.FUN = mod_departures,
   aging.FUN = mod_aging,
-  save.other = c("attr")
+  save.other = c("attr"),
+  verbose = FALSE
 )
 
 
