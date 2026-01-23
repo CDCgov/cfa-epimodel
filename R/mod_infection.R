@@ -24,12 +24,14 @@ mod_infection <- function(dat, at) {
 
   infProbMTF <- get_param(dat, "infProbMTF")
   infProbFTM <- get_param(dat, "infProbFTM")
-  act.rate <- get_param(dat, "act.rate")
+  act_rate_vec <- get_param(dat, "act_rate_vec")
+  cond_prob_vec <- get_param(dat, "cond_prob_vec")
+  cond_eff <- get_param(dat, "cond_eff")
 
-  # Check that act.rate length is valid
+  # Check that act_rate_vec length is valid
   n_age_groups <- length(unique(age_group[active == 1]))
-  if (!(length(act.rate) == 1 || length(act.rate) == n_age_groups)) {
-    stop("act.rate parameter length must be either 1 or equal to the number of age groups in the population. ",
+  if (!(length(act_rate_vec) == 1 || length(act_rate_vec) == n_age_groups)) {
+    stop("act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population. ",
       call. = FALSE
     )
   }
@@ -77,15 +79,31 @@ mod_infection <- function(dat, at) {
         )
       }
 
-      # Calculate infection-stage act/contact rates
-      lact.rate <- length(act.rate)
-      del$actRate <- ifelse(del$infDur <= lact.rate,
-        act.rate[del$infDur],
-        act.rate[lact.rate]
-      )
+      # Add age-group specific act rates
+      # Using age of youngest partner in partnerships
+      lact.rate <- length(act_rate_vec)
+      if (length(act_rate_vec) == 1) {
+        del$actRate <- act_rate_vec
+      } else {
+        age_inf <- age_group[del$inf]
+        age_sus <- age_group[del$sus]
+        age_youngest <- ifelse(age_inf < age_sus, age_inf, age_sus)
+        del$actRate <- act_rate_vec[age_youngest]
+      }
+
+      # STILL TO BE IMPLEMENTED
+      # infection stage adjustment
+      # directionality adjustment
+      # AMR tracker
+      # AMR initial condition - add to attrs
+
+      # Add probability of effective condom use
+      # Based on relationship type
+      del$condUseProb <- cond_prob_vec[del$network]
+      del$condAdj <- 1 - (del$condUseProb * cond_eff)
 
       # Calculate final transmission probability per timestep
-      del$finalProb <- 1 - (1 - del$transProb)^del$actRate
+      del$finalProb <- 1 - (1 - (del$transProb * del$condAdj))^del$actRate
 
       # Randomize transmissions and subset df
       transmit <- stats::rbinom(nrow(del), 1, del$finalProb)
@@ -112,7 +130,10 @@ mod_infection <- function(dat, at) {
   }
 
   ## Save incidence vector
+  dat <- set_epi(dat, "si.flow", at, totInf)
   dat <- set_epi(dat, "si.flow.female0", at, nInf)
   dat <- set_epi(dat, "si.flow.female1", at, nInfG2)
-  return(dat) # nolint
+
+  # Return
+  dat
 }

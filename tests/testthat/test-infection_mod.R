@@ -10,23 +10,30 @@ ngrps <- length(unique(ag))
 params_single_rate <- EpiModel::param.net(
   infProbMTF = 1,
   infProbFTM = 1,
-  act.rate = 2 # single value, should work regardless of n age groups
+  act_rate_vec = 2, # single value, should work regardless of n age groups
+  cond_prob_vec = 0,
+  cond_eff = 0
 )
 params_rate_per_group <- EpiModel::param.net(
   infProbMTF = 1,
   infProbFTM = 1,
-  act.rate = rep(2, ngrps) # correct length
+  act_rate_vec = rep(2, ngrps), # correct length
+  cond_prob_vec = 0,
+  cond_eff = 0
 )
 params_rate_length_long <- EpiModel::param.net(
   infProbMTF = 1,
   infProbFTM = 1,
-  act.rate = rep(2, ngrps + 3) # too long (should be length 1 or length of age groups)
+  act_rate_vec = rep(2, ngrps + 3), # too long (should be length 1 or length of age groups)
+  cond_prob_vec = 0,
+  cond_eff = 0
 )
-
 params_rate_length_short <- EpiModel::param.net(
   infProbMTF = 1,
   infProbFTM = 1,
-  act.rate = rep(2, ngrps - 1) # too short (should be length 1 or length of age groups)
+  act_rate_vec = rep(2, ngrps - 1), # too short (should be length 1 or length of age groups)
+  cond_prob_vec = 0,
+  cond_eff = 0
 )
 
 ## Initial Conditions
@@ -36,11 +43,12 @@ inits <- EpiModel::init.net(i.num = 5)
 controls <- EpiModel::control.net(
   nsims = 1, nsteps = 10,
   infection.FUN = mod_infection,
+  epi.by = "female",
   save.other = c("attr"),
   verbose = FALSE
 )
 
-test_that("mod_infection works with single act.rate value", {
+test_that("mod_infection works with single act_rate_vec value", {
   expect_no_error(
     sim <- EpiModel::netsim(fit, params_single_rate, inits, controls)
   )
@@ -49,7 +57,7 @@ test_that("mod_infection works with single act.rate value", {
   expect_gt(sum(sim$epi$i.num[[1]]), init_inum)
 })
 
-test_that("mod_infection works with act.rate value per age group", {
+test_that("mod_infection works with act_rate_vec value per age group", {
   expect_no_error(
     sim <- EpiModel::netsim(fit, params_rate_per_group, inits, controls)
   )
@@ -57,14 +65,15 @@ test_that("mod_infection works with act.rate value per age group", {
   init_inum <- sim$epi$i.num[[1]][1]
   expect_gt(sum(sim$epi$i.num[[1]]), init_inum)
 })
-test_that("mod_infection errors with wrong length act.rate", {
+
+test_that("mod_infection errors with wrong length act_rate_vec", {
   expect_error(
     suppressMessages(EpiModel::netsim(fit, params_rate_length_long, inits, controls)),
-    regexp = "act.rate parameter length must be either 1 or equal to the number of age groups in the population"
+    regexp = "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population"
   )
 
   expect_error(
     suppressMessages(EpiModel::netsim(fit, params_rate_length_short, inits, controls)),
-    regexp = "act.rate parameter length must be either 1 or equal to the number of age groups in the population"
+    regexp = "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population"
   )
 })
