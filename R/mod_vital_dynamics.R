@@ -20,17 +20,17 @@ mod_aging <- function(dat, at) {
   age <- get_attr(dat, "age")
   age_group <- get_attr(dat, "age_group")
   age_group_width <- get_param(dat, "age_group_width")
-  entryAge <- get_param(dat, "entryAge")
-  exitAge <- get_param(dat, "exitAge")
+  entry_age <- get_param(dat, "entry_age")
+  exit_age <- get_param(dat, "exit_age")
   units <- get_param(dat, "units_per_year")
 
   # Update age and age_group vectors
   age <- age + (1 / units)
-  ngrps <- ceiling((exitAge - entryAge) / age_group_width)
+  ngrps <- ceiling((exit_age - entry_age) / age_group_width)
   for (i in seq_len(ngrps)) {
     nodes_in_group <- which(
-      age >= (entryAge + (age_group_width * (i - 1))) &
-        age < (entryAge + (age_group_width * i))
+      age >= (entry_age + (age_group_width * (i - 1))) &
+        age < (entry_age + (age_group_width * i))
     )
     age_group[nodes_in_group] <- i
   }
@@ -57,12 +57,21 @@ mod_departures <- function(dat, at) {
   status <- get_attr(dat, "status")
 
   ## Parameters
-  exitAge <- get_param(dat, "exitAge")
+  exit_age <- get_param(dat, "exit_age")
+
+  ## Double check that entry age and attr.rules age are consistent
+  ## Do this here because we currently use default epimodel arrival module
+  entry_age <- get_param(dat, "entry_age")
+  attr_rules_age <- get_control(dat, "attr.rules")$age
+  if (!is.null(attr_rules_age) && entry_age != attr_rules_age) {
+    stop("entry_age parameter and attr.rules age value must be the same.")
+  }
+
   ## if we had ASMR we would add that here
 
   ## Query alive but past simulation age range
   ## this setup a little odd make it easier to include ASMR later
-  idsElig <- which(active == 1 & ceiling(age) >= exitAge)
+  idsElig <- which(active == 1 & ceiling(age) >= exit_age)
   nElig <- length(idsElig)
   nDepts <- 0
 
@@ -113,10 +122,10 @@ mod_arrivals <- function(dat, at) {
   ## Parameters
   n <- sum(get_attr(dat, "active") == 1)
   aType <- get_param(dat, "arrivalType")
-  entryAge <- get_param(dat, "entryAge")
-  femaleProb <- get_param(dat, "entryFemaleProb")
-  raceNames <- get_param(dat, "entryRaceNames")
-  raceProbs <- get_param(dat, "entryRaceProbs")
+  female_prob <- get_param(dat, "entry_female_prob")
+  race_probs <- get_param(dat, "entry_race_probs")
+  race_names <- get_param(dat, "entry_race_names")
+  entry_age <- get_param(dat, "entry_age")
 
   nArrivals <- 0
 
@@ -138,12 +147,12 @@ mod_arrivals <- function(dat, at) {
 
   if (nArrivals > 0) {
     ## Determine sex, race
-    if (nArrivals == 1) {
-      arrivalSex <- sample(c(0, 1), 1, prob = c(1 - femaleProb, femaleProb))
-      arrivalRace <- sample(raceNames, 1, prob = raceProbs)
-    } else { # use base EpiModel apportion_lr function if nArrivals > 1
-      arrivalSex <- apportion_lr(nArrivals, c(0, 1), c(1 - femaleProb, femaleProb))
-      arrivalRace <- apportion_lr(nArrivals, raceNames, raceProbs)
+    if (nArrivals <= 5) { # for small nArrivals, sample individually
+      arrivalSex <- sample(c(0, 1), nArrivals, prob = c(1 - female_prob, female_prob), replace = TRUE)
+      arrivalRace <- sample(race_names, nArrivals, prob = race_probs, replace = TRUE)
+    } else { # use base EpiModel apportion_lr function if nArrivals > 5
+      arrivalSex <- apportion_lr(nArrivals, c(0, 1), c(1 - female_prob, female_prob))
+      arrivalRace <- apportion_lr(nArrivals, race_names, race_probs)
     }
 
 
@@ -151,7 +160,7 @@ mod_arrivals <- function(dat, at) {
     dat <- append_core_attr(dat, at, nArrivals)
     dat <- append_attr(dat, "status", "s", nArrivals)
     dat <- append_attr(dat, "infTime", NA, nArrivals)
-    dat <- append_attr(dat, "age", entryAge, nArrivals)
+    dat <- append_attr(dat, "age", entry_age, nArrivals)
     dat <- append_attr(dat, "age_group", 1, nArrivals)
     dat <- append_attr(dat, "race", arrivalRace, nArrivals)
     dat <- append_attr(dat, "female", arrivalSex, nArrivals)

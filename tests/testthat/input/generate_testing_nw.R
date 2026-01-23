@@ -2,7 +2,9 @@
 # current required attributes: age, age_group, olderpartner, female, race
 # number of edges and duration are arbitrary
 size <- 100
-age_vec <- seq_len(size) + 18
+age_min <- 15
+age_max <- 50
+age_vec <- seq(age_min, age_max, length.out = size)
 age_group_vec <- dplyr::case_when(
   age_vec < 20 ~ 1,
   age_vec >= 20 & age_vec < 25 ~ 2,
