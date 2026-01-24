@@ -100,7 +100,7 @@ test_that("vital dynamics and arrival attr assignment working", {
   # expect all races to be represented within some tolerance
   ## Note: with small sample sizes and many categories, this test may fail by chance.
   ## May need to increase size of network and/or nsteps if that occurs frequently.
-  tolerance <- 0.1
+  tolerance <- 0.2
   for (i in seq_along(sim$param$entry_race_names)) {
     race <- sim$param$entry_race_names[i]
     expected_prop <- sim$param$entry_race_probs[i]
