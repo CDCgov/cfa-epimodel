@@ -9,10 +9,9 @@
 
 mod_infection <- function(dat, at) {
   # Notes
-  ## for now:
-  ## - no age/rel difference in act rates
-  ## - no condoms
-  ## leaving infection-stage inf prob rate functionality in but unused atm
+  ## NEED TESTS FOR INFECTION STAGE MODIFIERS
+  ## NEEDS TESTS FOR CONDOM USE PROBABILITIES & EFFECTIVENESS
+  ## needs AMR tracker implementation (to add when AMR module is done)
 
   # Variables ---------------------------------------------------------------
 
@@ -22,11 +21,19 @@ mod_infection <- function(dat, at) {
   female <- get_attr(dat, "female")
   age_group <- get_attr(dat, "age_group")
 
-  infProbMTF <- get_param(dat, "infProbMTF")
-  infProbFTM <- get_param(dat, "infProbFTM")
+  inf_prob_mtf <- get_param(dat, "inf_prob_mtf")
+  inf_prob_ftm <- get_param(dat, "inf_prob_ftm")
+  acute_inf_modifier <- get_param(dat, "acute_inf_modifier")
+  acute_duration <- get_param(dat, "acute_duration")
   act_rate_vec <- get_param(dat, "act_rate_vec")
   cond_prob_vec <- get_param(dat, "cond_prob_vec")
   cond_eff <- get_param(dat, "cond_eff")
+
+  # Generate inf prob vectors if acute modifier > 1 & acute_duration defined
+  if (acute_inf_modifier > 1 && !is.null(acute_duration)) {
+    inf_prob_mtf <- c(rep(inf_prob_mtf * acute_inf_modifier, acute_duration), inf_prob_mtf)
+    inf_prob_ftm <- c(rep(inf_prob_ftm * acute_inf_modifier, acute_duration), inf_prob_ftm)
+  }
 
   # Check that act_rate_vec length is valid
   n_age_groups <- length(unique(age_group[active == 1]))
@@ -59,22 +66,21 @@ mod_infection <- function(dat, at) {
       del$infDur[del$infDur == 0] <- 1
 
       # Calculate infection-stage transmission rates
-      linf.prob <- length(infProbMTF)
-      if (is.null(infProbFTM)) {
+      linf.prob <- length(inf_prob_mtf)
+      if (is.null(inf_prob_ftm)) {
         del$transProb <- ifelse(del$infDur <= linf.prob,
-          infProbMTF[del$infDur],
-          infProbMTF[linf.prob]
+          inf_prob_mtf[del$infDur],
+          inf_prob_mtf[linf.prob]
         )
       } else {
-        # FLAG
         del$transProb <- ifelse(female[del$sus] == 1,
           ifelse(del$infDur <= linf.prob,
-            infProbMTF[del$infDur],
-            infProbMTF[linf.prob]
+            inf_prob_mtf[del$infDur],
+            inf_prob_mtf[linf.prob]
           ),
           ifelse(del$infDur <= linf.prob,
-            infProbFTM[del$infDur],
-            infProbFTM[linf.prob]
+            inf_prob_ftm[del$infDur],
+            inf_prob_ftm[linf.prob]
           )
         )
       }
@@ -92,8 +98,6 @@ mod_infection <- function(dat, at) {
       }
 
       # STILL TO BE IMPLEMENTED
-      # infection stage adjustment
-      # directionality adjustment
       # AMR tracker
       # AMR initial condition - add to attrs
 

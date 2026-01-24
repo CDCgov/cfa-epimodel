@@ -8,29 +8,37 @@ ngrps <- length(unique(ag))
 ## 1 time step = 1 year, to speed aging processes
 ## Parameters
 params_single_rate <- EpiModel::param.net(
-  infProbMTF = 1,
-  infProbFTM = 1,
+  inf_prob_mtf = 0.5,
+  inf_prob_ftm = 0.5,
+  acute_inf_modifier = 2,
+  acute_duration = 5,
   act_rate_vec = 2, # single value, should work regardless of n age groups
   cond_prob_vec = 0,
   cond_eff = 0
 )
 params_rate_per_group <- EpiModel::param.net(
-  infProbMTF = 1,
-  infProbFTM = 1,
+  inf_prob_mtf = 0.5,
+  inf_prob_ftm = 0.5,
+  acute_inf_modifier = 2,
+  acute_duration = 5,
   act_rate_vec = rep(2, ngrps), # correct length
   cond_prob_vec = 0,
   cond_eff = 0
 )
 params_rate_length_long <- EpiModel::param.net(
-  infProbMTF = 1,
-  infProbFTM = 1,
+  inf_prob_mtf = 0.5,
+  inf_prob_ftm = 0.5,
+  acute_inf_modifier = 2,
+  acute_duration = 5,
   act_rate_vec = rep(2, ngrps + 3), # too long (should be length 1 or length of age groups)
   cond_prob_vec = 0,
   cond_eff = 0
 )
 params_rate_length_short <- EpiModel::param.net(
-  infProbMTF = 1,
-  infProbFTM = 1,
+  inf_prob_mtf = 0.5,
+  inf_prob_ftm = 0.5,
+  acute_inf_modifier = 2,
+  acute_duration = 5,
   act_rate_vec = rep(2, ngrps - 1), # too short (should be length 1 or length of age groups)
   cond_prob_vec = 0,
   cond_eff = 0
