@@ -1,47 +1,63 @@
 # Load test network fit object
 fit <- readRDS(test_path("input", "test_nw.RDS"))
 
+# --------------------------------------------------------------
+# TESTING AGE-SPECIFIC ACT RATES IN mod_infection --------------
+#--------------------------------------------------------------
 ag <- fit$newnetwork %v% "age_group"
 ngrps <- length(unique(ag))
 
-# Prep input functions
 ## 1 time step = 1 year, to speed aging processes
 ## Parameters
-params_single_rate <- EpiModel::param.net(
+static_params <- list(
   inf_prob_mtf = 0.5,
   inf_prob_ftm = 0.5,
   acute_inf_modifier = 2,
   acute_duration = 5,
-  act_rate_vec = 2, # single value, should work regardless of n age groups
   cond_prob_vec = 0,
   cond_eff = 0
 )
-params_rate_per_group <- EpiModel::param.net(
-  inf_prob_mtf = 0.5,
-  inf_prob_ftm = 0.5,
-  acute_inf_modifier = 2,
-  acute_duration = 5,
-  act_rate_vec = rep(2, ngrps), # correct length
-  cond_prob_vec = 0,
-  cond_eff = 0
+params_single_rate <- with(
+  static_params,
+  EpiModel::param.net(
+    inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = cond_prob_vec, cond_eff = cond_eff,
+    # single value, should work regardless of n age groups
+    act_rate_vec = 2
+  )
 )
-params_rate_length_long <- EpiModel::param.net(
-  inf_prob_mtf = 0.5,
-  inf_prob_ftm = 0.5,
-  acute_inf_modifier = 2,
-  acute_duration = 5,
-  act_rate_vec = rep(2, ngrps + 3), # too long (should be length 1 or length of age groups)
-  cond_prob_vec = 0,
-  cond_eff = 0
+
+params_rate_per_group <- with(
+  static_params,
+  EpiModel::param.net(
+    inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = 0, cond_eff = 0,
+    # correct length
+    act_rate_vec = rep(2, ngrps)
+  )
 )
-params_rate_length_short <- EpiModel::param.net(
-  inf_prob_mtf = 0.5,
-  inf_prob_ftm = 0.5,
-  acute_inf_modifier = 2,
-  acute_duration = 5,
-  act_rate_vec = rep(2, ngrps - 1), # too short (should be length 1 or length of age groups)
-  cond_prob_vec = 0,
-  cond_eff = 0
+
+params_rate_length_long <- with(
+  static_params,
+  EpiModel::param.net(
+    inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = 0, cond_eff = 0,
+    # too long (should be length 1 or length of age groups)
+    act_rate_vec = rep(2, ngrps + 3)
+  )
+)
+params_rate_length_short <- with(
+  static_params,
+  EpiModel::param.net(
+    inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = cond_prob_vec, cond_eff = cond_eff,
+    # too short (should be length 1 or length of age groups)
+    act_rate_vec = rep(2, ngrps - 1)
+  )
 )
 
 ## Initial Conditions
@@ -58,7 +74,7 @@ controls <- EpiModel::control.net(
 
 test_that("mod_infection works with single act_rate_vec value", {
   expect_no_error(
-    sim <- EpiModel::netsim(fit, params_single_rate, inits, controls)
+    sim <- suppressMessages(EpiModel::netsim(fit, params_single_rate, inits, controls))
   )
   # And double check that infections occurred
   init_inum <- sim$epi$i.num[[1]][1]
@@ -67,7 +83,7 @@ test_that("mod_infection works with single act_rate_vec value", {
 
 test_that("mod_infection works with act_rate_vec value per age group", {
   expect_no_error(
-    sim <- EpiModel::netsim(fit, params_rate_per_group, inits, controls)
+    sim <- suppressMessages(EpiModel::netsim(fit, params_rate_per_group, inits, controls))
   )
   # And double check that infections occurred
   init_inum <- sim$epi$i.num[[1]][1]
@@ -84,4 +100,87 @@ test_that("mod_infection errors with wrong length act_rate_vec", {
     suppressMessages(EpiModel::netsim(fit, params_rate_length_short, inits, controls)),
     regexp = "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population"
   )
+})
+
+# --------------------------------------------------------------
+# TESTING DIRECTIONAL ACT RATES IN mod_infection --------------
+#--------------------------------------------------------------
+
+## Parameters
+static_directional_params <- list(
+  acute_inf_modifier = 1,
+  acute_duration = 5,
+  cond_prob_vec = 0,
+  cond_eff = 0,
+  act_rate_vec = 2
+)
+
+param_only_mtf <- with(
+  static_directional_params,
+  EpiModel::param.net(
+    inf_prob_mtf = 1, inf_prob_ftm = 0,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = cond_prob_vec, cond_eff = cond_eff,
+    act_rate_vec = act_rate_vec
+  )
+)
+
+param_only_ftm <- with(
+  static_directional_params,
+  EpiModel::param.net(
+    inf_prob_mtf = 0, inf_prob_ftm = 1,
+    acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+    cond_prob_vec = cond_prob_vec, cond_eff = cond_eff,
+    act_rate_vec = act_rate_vec
+  )
+)
+
+## Initial Conditions
+inits <- EpiModel::init.net(i.num = 50)
+
+## Control Settings & Modules
+controls <- EpiModel::control.net(
+  nsims = 1, nsteps = 10,
+  infection.FUN = mod_infection,
+  epi.by = "female",
+  save.other = c("attr"),
+  verbose = FALSE
+)
+
+test_that("mod_infection works with directional infection probabilities", {
+  # Testing MTF directionality --------------------------------------
+  expect_no_error(
+    sim_mtf <- suppressMessages(EpiModel::netsim(fit, param_only_mtf, inits, controls))
+  )
+  # Convert sim to data frame for easier manipulation (only extracts epi list, not attributes)
+  df <- as.data.frame(sim_mtf)
+  # Double check that infections occurred
+  init_inum <- df$i.num[1]
+  prev_vec <- df$i.num
+  # At least one in vector of prevalent infs over time should be > initial number of infs
+  expect_true(any(prev_vec > init_inum))
+  # Sum of vector of new infections over time should be > 0
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
+  # Sum of vector of new infections among females should = sum of vector of all new infections
+  sum_female_inc_vec <- sum(df$si.flow.female1, na.rm = TRUE)
+  expect_equal(sum_female_inc_vec, sum_inc_vec)
+
+
+  # Testing FTM directionality --------------------------------------
+  expect_no_error(
+    sim_ftm <- suppressMessages(EpiModel::netsim(fit, param_only_ftm, inits, controls))
+  )
+  df <- as.data.frame(sim_ftm)
+  # Double check that infections occurred
+  init_inum <- df$i.num[1]
+  sum_prev_vec <- sum(df$i.num, na.rm = TRUE)
+  # Sum of vector of prevalent infs over time should be > initial number of infs
+  expect_gt(sum_prev_vec, init_inum)
+  # Sum of vector of new infections over time should be > 0
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
+  # Sum of vector of new infections among males should = sum of vector of all new infections
+  sum_male_inc_vec <- sum(df$si.flow.female0, na.rm = TRUE)
+  expect_equal(sum_male_inc_vec, sum_inc_vec)
 })

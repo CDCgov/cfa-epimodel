@@ -29,10 +29,24 @@ mod_infection <- function(dat, at) {
   cond_prob_vec <- get_param(dat, "cond_prob_vec")
   cond_eff <- get_param(dat, "cond_eff")
 
+  # Parameter Checks -------------------------------------------------------
+  inf_probs <- c(inf_prob_mtf, inf_prob_ftm, cond_prob_vec, cond_eff)
+  if (any(inf_probs < 0) || any(inf_probs > 1)) {
+    stop("All infection-related probabilities must be >=0 and <=1 (or null).", call. = FALSE)
+  }
+
+  if (acute_inf_modifier < 1) {
+    stop("acute_inf_modifier parameter must be >= 1.", call. = FALSE)
+  }
+
   # Generate inf prob vectors if acute modifier > 1 & acute_duration defined
   if (acute_inf_modifier > 1 && !is.null(acute_duration)) {
     inf_prob_mtf <- c(rep(inf_prob_mtf * acute_inf_modifier, acute_duration), inf_prob_mtf)
     inf_prob_ftm <- c(rep(inf_prob_ftm * acute_inf_modifier, acute_duration), inf_prob_ftm)
+    if (any(inf_prob_mtf > 1) || any(inf_prob_ftm > 1)) {
+      stop("Infection probabilities during acute infection stage exceed 1.
+      Adjust inf_prob_mtf, inf_prob_ftm, or acute_inf_modifier parameters.", call. = FALSE)
+    }
   }
 
   # Check that act_rate_vec length is valid
@@ -119,8 +133,9 @@ mod_infection <- function(dat, at) {
       dat <- set_attr(dat, "status", status)
       infTime[idsNewInf] <- at
       dat <- set_attr(dat, "infTime", infTime)
-      nInf <- sum(female[idsNewInf] == 1)
-      nInfG2 <- sum(female[idsNewInf] == 2)
+      female_attrs <- unique(female)
+      nInf <- sum(female[idsNewInf] == female_attrs[1])
+      nInfG2 <- sum(female[idsNewInf] == female_attrs[2])
       totInf <- nInf + nInfG2
     } # end some discordant edges condition
   } # end some active discordant nodes condition

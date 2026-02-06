@@ -24,6 +24,7 @@ fit <- EpiModel::netest(nw,
   formation = ~edges,
   target.stats = 15,
   coef.diss = EpiModel::dissolution_coefs(~ offset(edges), 10),
+  constraints = ~ blocks(attr = ~female, levels2 = diag(TRUE, 2)),
   edapprox = TRUE
 )
 

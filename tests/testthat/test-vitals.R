@@ -39,7 +39,7 @@ controls_all_vitals <- EpiModel::control.net(
 
 test_that("mod_aging updates age and age_group correctly, arrivalType = departures returns static pop size", {
   # Run simulation with only aging module
-  sim <- EpiModel::netsim(fit, params, inits, controls_aging)
+  sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_aging))
 
   # Test age and age_group attributes at end of simulation
   sim_age <- sim$attr$sim1$age
@@ -65,7 +65,7 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
 
 test_that("vital dynamics and arrival attr assignment working", {
   # Run simulation with all vital dynamics modules
-  sim <- EpiModel::netsim(fit, params, inits, controls_all_vitals)
+  sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_all_vitals))
 
   ## First check that there are some arrivals and departures
   total_arrivals <- sum(sim$epi$a.flow$sim1, na.rm = TRUE)

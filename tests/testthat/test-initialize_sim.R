@@ -29,17 +29,17 @@ controls <- EpiModel::control.net(
 test_that("mod_sti_initialize throws error if required nodal attributes are missing", {
   # Test normal initialization
   expect_no_error(
-    EpiModel::netsim(fit, params, inits, controls)
+    suppressMessages(EpiModel::netsim(fit, params, inits, controls))
   )
 
   # Test initialization with missing required attribute
   expect_error(
-    EpiModel::netsim(fit_with_missing_attr, params, inits, controls),
+    suppressMessages(EpiModel::netsim(fit_with_missing_attr, params, inits, controls)),
     regexp = "The following required attributes are missing from the network at initialization: age"
   )
 
   # Test initialization with additional attribute (should pass)
   expect_no_error(
-    EpiModel::netsim(fit_with_additional_attr, params, inits, controls)
+    suppressMessages(EpiModel::netsim(fit_with_additional_attr, params, inits, controls))
   )
 })
