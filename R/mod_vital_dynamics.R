@@ -148,6 +148,7 @@ mod_arrivals <- function(dat, at) {
   if (nArrivals > 0) {
     ## Determine sex, race
     if (nArrivals <= 5) { # for small nArrivals, sample individually
+      # 5 is arbitrary cutoff but seems to work well in testing
       arrivalSex <- sample(c(0, 1), nArrivals, prob = c(1 - female_prob, female_prob), replace = TRUE)
       arrivalRace <- sample(race_names, nArrivals, prob = race_probs, replace = TRUE)
     } else { # use base EpiModel apportion_lr function if nArrivals > 5
