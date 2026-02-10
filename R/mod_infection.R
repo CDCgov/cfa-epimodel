@@ -52,11 +52,18 @@ mod_infection <- function(dat, at) {
   # Check that act_rate_vec length is valid
   n_age_groups <- length(unique(age_group[active == 1]))
   if (!(length(act_rate_vec) == 1 || length(act_rate_vec) == n_age_groups)) {
-    stop("act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population. ",
+    stop("act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population.",
+      call. = FALSE
+    )
+  }
+  # Check that cond_prob_vec length is valid
+  if (!(length(cond_prob_vec) == 1 || length(cond_prob_vec) == dat$num.nw)) {
+    stop("cond_prob_vec parameter length must be either 1 or equal to the number of networks in the simulation.",
       call. = FALSE
     )
   }
 
+  # Process -----------------------------------------------------------------
   # Vector of infected and susceptible IDs
   idsInf <- which(active == 1 & status == "i")
   nActive <- sum(active == 1)
@@ -66,7 +73,6 @@ mod_infection <- function(dat, at) {
   # G2 = female postscript (female attr == 1)
   nInf <- nInfG2 <- totInf <- 0
 
-  # Process -----------------------------------------------------------------
   # If some infected AND some susceptible, then proceed
   if (nElig > 0 && nElig < nActive) {
     # Get discordant edgelist
@@ -115,13 +121,17 @@ mod_infection <- function(dat, at) {
       # AMR tracker
       # AMR initial condition - add to attrs
 
-      # Add probability of effective condom use
-      # Based on relationship type
-      del$condUseProb <- cond_prob_vec[del$network]
-      del$condAdj <- 1 - (del$condUseProb * cond_eff)
+      # Add probability of effective condom use based on rel type (network)
+      cond_use_vec <- cond_prob_vec[del$network]
+      ## Do they use condoms this time period?
+      del$condUse <- stats::rbinom(nrow(del), 1, cond_use_vec)
+      ## If using condoms, apply effectiveness to reduce transmission probability
+      ## condFinal = 0, no reduction in transmission probability
+      ## condFinal = 1, 100% reduction
+      del$condFinal <- del$condUse * cond_eff
 
       # Calculate final transmission probability per timestep
-      del$finalProb <- 1 - (1 - (del$transProb * del$condAdj))^del$actRate
+      del$finalProb <- 1 - (1 - (del$transProb * (1 - del$condFinal)))^del$actRate
 
       # Randomize transmissions and subset df
       transmit <- stats::rbinom(nrow(del), 1, del$finalProb)

@@ -184,3 +184,126 @@ test_that("mod_infection works with directional infection probabilities", {
   sum_male_inc_vec <- sum(df$si.flow.female0, na.rm = TRUE)
   expect_equal(sum_male_inc_vec, sum_inc_vec)
 })
+
+# --------------------------------------------------------------
+# TESTING CONDOM USE AND EFFECTIVENESS IN mod_infection --------------
+#--------------------------------------------------------------
+
+## Static parameters for condom use and effectiveness
+static_params_cond <- list(
+  inf_prob_mtf = 1,
+  inf_prob_ftm = 1,
+  acute_inf_modifier = 1,
+  acute_duration = 5,
+  act_rate_vec = 2
+)
+
+## Initial Conditions
+inits <- EpiModel::init.net(i.num = 50)
+
+## Control Settings & Modules
+controls <- EpiModel::control.net(
+  nsims = 1, nsteps = 10,
+  infection.FUN = mod_infection,
+  epi.by = "female",
+  save.other = c("attr"),
+  verbose = FALSE
+)
+
+test_that("when condom use & effectiveness = 1, we get no transmissions", {
+  params_condom_no_trans <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = 1, cond_eff = 1,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+
+  expect_no_error(
+    sim <- suppressMessages(EpiModel::netsim(
+      fit, params_condom_no_trans, inits, controls
+    ))
+  )
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_equal(sum_inc_vec, 0)
+})
+
+test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
+  params_condom_no_eff <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = 1, cond_eff = 0,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+
+  expect_no_error(
+    sim <- suppressMessages(EpiModel::netsim(
+      fit, params_condom_no_eff, inits, controls
+    ))
+  )
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
+})
+
+test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
+  params_condom_no_cond <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = 0, cond_eff = 1,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+  expect_no_error(
+    sim <- suppressMessages(EpiModel::netsim(
+      fit, params_condom_no_cond, inits, controls
+    ))
+  )
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
+})
+
+test_that("invalid parameter values throw errors", {
+  params_condom_invalid <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = 1.5, cond_eff = -0.2,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+
+  expect_error(
+    suppressMessages(EpiModel::netsim(
+      fit, params_condom_invalid, inits, controls
+    )),
+    regexp = "All infection-related probabilities must be >=0 and <=1"
+  )
+
+  params_condom_invalid_length <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = c(1, 1, 1), cond_eff = 0,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+
+  expect_error(
+    suppressMessages(EpiModel::netsim(
+      fit, params_condom_invalid_length, inits, controls
+    )),
+    regexp = "cond_prob_vec parameter length must be either 1 or equal to the number of networks in the simulation."
+  )
+})
