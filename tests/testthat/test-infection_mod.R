@@ -210,6 +210,27 @@ controls <- EpiModel::control.net(
   verbose = FALSE
 )
 
+test_that("when condom use & effectiveness = 1, we get no transmissions", {
+  params_condom_no_trans <- with(
+    static_params_cond,
+    EpiModel::param.net(
+      cond_prob_vec = 1, cond_eff = 1,
+      inf_prob_mtf = inf_prob_mtf, inf_prob_ftm = inf_prob_ftm,
+      acute_inf_modifier = acute_inf_modifier, acute_duration = acute_duration,
+      act_rate_vec = act_rate_vec
+    )
+  )
+
+  expect_no_error(
+    sim <- suppressMessages(EpiModel::netsim(
+      fit, params_condom_no_trans, inits, controls
+    ))
+  )
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_equal(sum_inc_vec, 0)
+})
+
 test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
   params_condom_no_eff <- with(
     static_params_cond,
