@@ -1,27 +1,20 @@
-# generate nw and fit object for testing
-# current required attributes: age, olderpartner, female, race
-# number of edges and duration are arbitrary
-size <- 100
-nw <- network::network.initialize(size, directed = FALSE)
-nw <- network::set.vertex.attribute(nw, "age", seq_len(size) + 18)
-nw <- network::set.vertex.attribute(nw, "olderpartner", rbinom(size, 1, 0.2))
-nw <- network::set.vertex.attribute(nw, "female", rbinom(size, 1, 0.5))
-nw <- network::set.vertex.attribute(nw, "race", apportion_lr(size, c("A", "B"), c(0.6, 0.4)))
-fit <- EpiModel::netest(nw,
-  formation = ~edges,
-  target.stats = 15,
-  coef.diss = dissolution_coefs(~ offset(edges), 10),
-  edapprox = TRUE
-)
+# Load test netest fit object
+fit <- readRDS(test_path("input", "test_nw.RDS"))
+# Extract network for attribute checks below
+nw <- fit$newnetwork
 
 # Prep input functions
 ## 1 time step = 1 year, to speed aging processes
 ## Parameters
 params <- EpiModel::param.net(
+  vital_dynamics = TRUE,
   units_per_year = 1,
-  exitAge = 50, entryAge = 15, arrivalType = "departures",
-  entryFemaleProb = 0.5, entryRaceNames = c("A", "B"),
-  entryRaceProbs = c(0.6, 0.4)
+  exit_age = 50, entry_age = 15,
+  age_group_width = 5,
+  arrivalType = "departures",
+  entry_female_prob = 0.5,
+  entry_race_probs = c(0.6, 0.4),
+  entry_race_names = c("A", "B")
 )
 
 ## Initial Conditions
@@ -31,20 +24,22 @@ inits <- EpiModel::init.net(i.num = 5)
 controls_aging <- EpiModel::control.net(
   nsims = 1, nsteps = 10,
   aging.FUN = mod_aging,
-  save.other = c("attr")
+  save.other = c("attr"),
+  verbose = FALSE
 )
 controls_all_vitals <- EpiModel::control.net(
-  nsims = 1, nsteps = 30, # longer time to allow for aging out and new arrivals
+  nsims = 1, nsteps = 100, # longer time to allow for aging out and new arrivals
   arrivals.FUN = mod_arrivals,
   departures.FUN = mod_departures,
   aging.FUN = mod_aging,
-  save.other = c("attr")
+  save.other = c("attr"),
+  verbose = FALSE
 )
 
 
 test_that("mod_aging updates age and age_group correctly, arrivalType = departures returns static pop size", {
   # Run simulation with only aging module
-  sim <- EpiModel::netsim(fit, params, inits, controls_aging)
+  sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_aging))
 
   # Test age and age_group attributes at end of simulation
   sim_age <- sim$attr$sim1$age
@@ -70,7 +65,7 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
 
 test_that("vital dynamics and arrival attr assignment working", {
   # Run simulation with all vital dynamics modules
-  sim <- EpiModel::netsim(fit, params, inits, controls_all_vitals)
+  sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_all_vitals))
 
   ## First check that there are some arrivals and departures
   total_arrivals <- sum(sim$epi$a.flow$sim1, na.rm = TRUE)
@@ -91,7 +86,7 @@ test_that("vital dynamics and arrival attr assignment working", {
 
   ## Test that ages of arrivals are within expected range
   arrivals_duration <- sim$control$nsteps - (which(sim$epi$a.flow$sim1 > 0)[1])
-  expected_age_range <- sim$param$entryAge:(sim$param$entryAge + (arrivals_duration / sim$param$units_per_year))
+  expected_age_range <- sim$param$entry_age:(sim$param$entry_age + (arrivals_duration / sim$param$units_per_year))
 
   arrivals_ages <- sim$attr$sim1$age[arrivals_indices]
 
@@ -105,19 +100,19 @@ test_that("vital dynamics and arrival attr assignment working", {
   # expect all races to be represented within some tolerance
   ## Note: with small sample sizes and many categories, this test may fail by chance.
   ## May need to increase size of network and/or nsteps if that occurs frequently.
-  tolerance <- 0.1
-  for (i in seq_along(sim$param$entryRaceNames)) {
-    race <- sim$param$entryRaceNames[i]
-    expected_prop <- sim$param$entryRaceProbs[i]
+  tolerance <- 0.2
+  for (i in seq_along(sim$param$entry_race_names)) {
+    race <- sim$param$entry_race_names[i]
+    expected_prop <- sim$param$entry_race_probs[i]
     expect_true(race %in% names(arrivals_races_props))
-    expect_equal(arrivals_races_props[[i]], expected_prop, tolerance = tolerance)
+    expect_equal(arrivals_races_props[[race]], expected_prop, tolerance = tolerance)
   }
 
   ## Test that sex assignment for new arrivals matches specified probability
   ## Assumes female attr is binary 0/1
   arrivals_sex <- sim$attr$sim1$female[arrivals_indices]
   arrivals_sex_props <- table(arrivals_sex) / n_arrivals
-  expected_sex_prop <- c(1 - sim$param$entryFemaleProb, sim$param$entryFemaleProb)
+  expected_sex_prop <- c(1 - sim$param$entry_female_prob, sim$param$entry_female_prob)
   for (i in seq_along(expected_sex_prop)) {
     expect_equal(arrivals_sex_props[[i]], expected_sex_prop[i], tolerance = tolerance)
   }

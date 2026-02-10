@@ -7,9 +7,11 @@
 resimnet_updates_sti(dat, at, network)
 }
 \arguments{
-\item{dat}{simulation object}
+\item{dat}{Main \code{netsim_dat} object containing a \code{networkDynamic}
+object and other initialization information passed from
+\code{\link{netsim}}.}
 
-\item{at}{time step}
+\item{at}{Current time step.}
 
 \item{network}{Integer for network number (values 1, 2, or 3 for main, casual, and one-time
 networks).}

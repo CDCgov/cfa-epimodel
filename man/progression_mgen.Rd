@@ -7,9 +7,11 @@
 progression_mgen(dat, at)
 }
 \arguments{
-\item{dat}{simulation object}
+\item{dat}{Main \code{netsim_dat} object containing a \code{networkDynamic}
+object and other initialization information passed from
+\code{\link{netsim}}.}
 
-\item{at}{time step}
+\item{at}{Current time step.}
 }
 \description{
 Mgen disease progression

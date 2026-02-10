@@ -2,7 +2,7 @@
 #'
 #' @description Regular screening and symptomatic testing
 #'
-#' @inheritParams initialize_mgen
+#' @inheritParams vitals
 #'
 #' @export
 
