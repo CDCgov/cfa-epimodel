@@ -105,7 +105,7 @@ test_that("vital dynamics and arrival attr assignment working", {
     race <- sim$param$entry_race_names[i]
     expected_prop <- sim$param$entry_race_probs[i]
     expect_true(race %in% names(arrivals_races_props))
-    expect_equal(arrivals_races_props[[i]], expected_prop, tolerance = tolerance)
+    expect_equal(arrivals_races_props[[race]], expected_prop, tolerance = tolerance)
   }
 
   ## Test that sex assignment for new arrivals matches specified probability
