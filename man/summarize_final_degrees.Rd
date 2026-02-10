@@ -8,6 +8,8 @@ summarize_final_degrees(input, network)
 }
 \arguments{
 \item{input}{An object of class \code{EpiModel::netest}, \code{EpiModel::netsim} or \code{EpiModel::netdx}.}
+
+\item{network}{A character string specifying the network type, either "main" or "casual".}
 }
 \value{
 A data frame summarizing the mean degree, interquartile range (IQR), and data source

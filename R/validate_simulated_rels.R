@@ -182,6 +182,7 @@ plot_edges_history <- function(x, network, type) {
 #' For `EpiModel::netdx` objects, data is extracted from the "tedgelist" (timed edgelist) slot.
 #' For `EpiModel::netsim` objects, data is extracted from the "network" slot.
 #' @param input An object of class `EpiModel::netest`, `EpiModel::netsim` or `EpiModel::netdx`.
+#' @param network A character string specifying the network type, either "main" or "casual".
 #' @return A data frame summarizing the mean degree, interquartile range (IQR), and data source
 #' for each age and race combination
 #' @importFrom dplyr group_by summarize mutate
