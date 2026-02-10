@@ -62,6 +62,10 @@ mod_infection <- function(dat, at) {
       call. = FALSE
     )
   }
+  # If a single condom-use probability is provided, apply it to all networks
+  if (length(cond_prob_vec) == 1 && dat$num.nw > 1) {
+    cond_prob_vec <- rep(cond_prob_vec, dat$num.nw)
+  }
 
   # Process -----------------------------------------------------------------
   # Vector of infected and susceptible IDs
@@ -146,18 +150,16 @@ mod_infection <- function(dat, at) {
 
       # Count new infections
       female_attrs <- unique(female)
-      if (length(female_attrs) > 2) {
-        stop("Female attribute has more than 2 unique values, which is not currently supported.", call. = FALSE)
+      if (!all(female_attrs %in% c(0, 1))) {
+        stop("Female attribute must be coded as 0/1 only, which is required for sex-stratified epi slots.",
+          call. = FALSE
+        )
       }
-      ## If there are both females and males in the population,
-      ## calculate new infections among each sex
-      if (length(female_attrs) == 2) {
-        nInf <- sum(female[idsNewInf] == female_attrs[1])
-        nInfG2 <- sum(female[idsNewInf] == female_attrs[2])
-      } else {
-        nInf <- sum(female[idsNewInf] == female_attrs[1])
-        nInfG2 <- 0
-      }
+      ## Calculate new infections among each sex explicitly by code:
+      ## si.flow.female0 corresponds to new infs among female == 0
+      ## si.flow.female1 corresponds to new infs among female == 1
+      nInf <- sum(female[idsNewInf] == 0, na.rm = TRUE)
+      nInfG2 <- sum(female[idsNewInf] == 1, na.rm = TRUE)
       totInf <- nInf + nInfG2
     } # end some discordant edges condition
   } # end some active discordant nodes condition
