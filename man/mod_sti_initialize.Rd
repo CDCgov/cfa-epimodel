@@ -28,7 +28,7 @@ A \code{netsim_dat} class main data object.
 Initialize networks, starting nodal attributes, infection status,
 and other necessary components for STI transmission models. Most of this module
 is adapted from \code{EpiModel}'s \code{initialize.net} function, with bespoke
-checks for required attributes and infection assigment (in future)
+checks for required attributes and infection assignment (in future)
 }
 \details{
 When re-initializing a simulation, the \code{netsim} object passed
