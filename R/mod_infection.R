@@ -137,16 +137,12 @@ mod_infection <- function(dat, at) {
       transmit <- stats::rbinom(nrow(del), 1, del$finalProb)
       del <- del[which(transmit == 1), ]
 
-      # Set new infections vector
+      # Set new infections attribute vectors
       idsNewInf <- unique(del$sus)
       status[idsNewInf] <- "i"
       dat <- set_attr(dat, "status", status)
       infTime[idsNewInf] <- at
       dat <- set_attr(dat, "infTime", infTime)
-      female_attrs <- unique(female)
-      nInf <- sum(female[idsNewInf] == female_attrs[1])
-      nInfG2 <- sum(female[idsNewInf] == female_attrs[2])
-      totInf <- nInf + nInfG2
     } # end some discordant edges condition
   } # end some active discordant nodes condition
 
@@ -159,6 +155,21 @@ mod_infection <- function(dat, at) {
   }
 
   ## Save incidence vector
+  female_attrs <- unique(female)
+  if (length(female_attrs) > 2) {
+    stop("Female attribute has more than 2 unique values, which is not currently supported.", call. = FALSE)
+  }
+  ## If there are both females and males in the population,
+  ## calculate new infections among each sex
+  if (length(female_attrs) == 2) {
+    nInf <- sum(female[idsNewInf] == female_attrs[1])
+    nInfG2 <- sum(female[idsNewInf] == female_attrs[2])
+  } else {
+    nInf <- sum(female[idsNewInf] == female_attrs[1])
+    nInfG2 <- 0
+  }
+  totInf <- nInf + nInfG2
+
   dat <- set_epi(dat, "si.flow", at, totInf)
   dat <- set_epi(dat, "si.flow.female0", at, nInf)
   dat <- set_epi(dat, "si.flow.female1", at, nInfG2)
