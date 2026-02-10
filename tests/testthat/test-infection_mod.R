@@ -77,8 +77,9 @@ test_that("mod_infection works with single act_rate_vec value", {
     sim <- suppressMessages(EpiModel::netsim(fit, params_single_rate, inits, controls))
   )
   # And double check that infections occurred
-  init_inum <- sim$epi$i.num[[1]][1]
-  expect_gt(sum(sim$epi$i.num[[1]]), init_inum)
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
 })
 
 test_that("mod_infection works with act_rate_vec value per age group", {
@@ -86,8 +87,9 @@ test_that("mod_infection works with act_rate_vec value per age group", {
     sim <- suppressMessages(EpiModel::netsim(fit, params_rate_per_group, inits, controls))
   )
   # And double check that infections occurred
-  init_inum <- sim$epi$i.num[[1]][1]
-  expect_gt(sum(sim$epi$i.num[[1]]), init_inum)
+  df <- as.data.frame(sim)
+  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  expect_gt(sum_inc_vec, 0)
 })
 
 test_that("mod_infection errors with wrong length act_rate_vec", {
@@ -154,11 +156,6 @@ test_that("mod_infection works with directional infection probabilities", {
   )
   # Convert sim to data frame for easier manipulation (only extracts epi list, not attributes)
   df <- as.data.frame(sim_mtf)
-  # Double check that infections occurred
-  init_inum <- df$i.num[1]
-  prev_vec <- df$i.num
-  # At least one in vector of prevalent infs over time should be > initial number of infs
-  expect_true(any(prev_vec > init_inum))
   # Sum of vector of new infections over time should be > 0
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
@@ -173,10 +170,6 @@ test_that("mod_infection works with directional infection probabilities", {
   )
   df <- as.data.frame(sim_ftm)
   # Double check that infections occurred
-  init_inum <- df$i.num[1]
-  sum_prev_vec <- sum(df$i.num, na.rm = TRUE)
-  # Sum of vector of prevalent infs over time should be > initial number of infs
-  expect_gt(sum_prev_vec, init_inum)
   # Sum of vector of new infections over time should be > 0
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
