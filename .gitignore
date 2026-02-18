@@ -1,6 +1,7 @@
 #####
 poetry.lock
 *workspace
+.vscode/
 
 # Exclude many data and output file types by default
 

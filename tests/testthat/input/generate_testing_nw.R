@@ -19,8 +19,13 @@ nw <- network::set.vertex.attribute(nw, "age", age_vec)
 nw <- network::set.vertex.attribute(nw, "age_group", age_group_vec)
 nw <- network::set.vertex.attribute(nw, "olderpartner", rbinom(size, 1, 0.2))
 nw <- network::set.vertex.attribute(nw, "female", rbinom(size, 1, 0.5))
-nw <- network::set.vertex.attribute(nw, "race", EpiModel::apportion_lr(size, c("A", "B"), c(0.6, 0.4)))
-fit <- EpiModel::netest(nw,
+nw <- network::set.vertex.attribute(
+  nw,
+  "race",
+  EpiModel::apportion_lr(size, c("A", "B"), c(0.6, 0.4))
+)
+fit <- EpiModel::netest(
+  nw,
   formation = ~edges,
   target.stats = 15,
   coef.diss = EpiModel::dissolution_coefs(~ offset(edges), 10),

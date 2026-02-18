@@ -12,17 +12,25 @@
 #' @importFrom tidyr pivot_longer
 #' @importFrom rlang .data
 #' @export
-get_target_degrees_age_race <- function(yaml_params_loc, nets = c("main", "casual"), joint_attrs = c("age", "race")) {
+get_target_degrees_age_race <- function(
+  yaml_params_loc,
+  nets = c("main", "casual"),
+  joint_attrs = c("age", "race")
+) {
   # load network targets from yaml file
   x <- read_yaml(yaml_params_loc)
 
   # Validate inputs, currently only supports main and casual networks, age and race joint attributes
   if (sum(nets == c("main", "casual")) != 2) {
-    stop("Currently only 'main' and 'casual' networks are supported, in that order.")
+    stop(
+      "Currently only 'main' and 'casual' networks are supported, in that order."
+    )
   }
 
   if (sum(joint_attrs == c("age", "race")) != 2) {
-    stop("Currently only age and race are supported as joint attributes, in that order.")
+    stop(
+      "Currently only age and race are supported as joint attributes, in that order."
+    )
   }
 
   # Make sure the specified networks and attributes exist in the YAML file
@@ -36,7 +44,10 @@ get_target_degrees_age_race <- function(yaml_params_loc, nets = c("main", "casua
 
   joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
 
-  if (!joint_name %in% intersect(names(x[[nets[1]]]$nodefactor), names(x[[nets[2]]]$nodefactor))) {
+  if (
+    !joint_name %in%
+      intersect(names(x[[nets[1]]]$nodefactor), names(x[[nets[2]]]$nodefactor))
+  ) {
     stop("Joint attribute not found in the YAML file.")
   }
 
@@ -47,7 +58,6 @@ get_target_degrees_age_race <- function(yaml_params_loc, nets = c("main", "casua
   # Extract the attribute values for the specified joint attributes
   ages <- x$pop$age$min:x$pop$age$max
   races <- x$pop$race$levels
-
 
   dat <- data.frame(
     main = x[[nets[1]]]$nodefactor[[joint_name]],
@@ -144,14 +154,21 @@ plot_edges_history <- function(x, network, type) {
     stop("network must be either 'main', or 'casual'.")
   }
 
-  if (class(x) == "netsim") {
+  if (inherits(x, "netsim")) {
     edges_df <- get_edges_history(x, nets = network)
   } else {
     edges_df <- x
   }
 
-  if (!all(c("time", "sim", "net", "target", "diff_type", "diff", "mean") %in% names(edges_df))) {
-    stop("edges_df must contain the columns: time, sim, net, target, diff_type, diff, and mean.")
+  if (
+    !all(
+      c("time", "sim", "net", "target", "diff_type", "diff", "mean") %in%
+        names(edges_df)
+    )
+  ) {
+    stop(
+      "edges_df must contain the columns: time, sim, net, target, diff_type, diff, and mean."
+    )
   }
 
   target_val <- edges_df |>
@@ -167,7 +184,14 @@ plot_edges_history <- function(x, network, type) {
     geom_line(aes(y = .data$mean), color = "black", linewidth = 3) +
     geom_hline(aes(yintercept = target_val)) +
     labs(
-      title = paste("Edges history for ", network, " network (", type, ")", sep = ""),
+      title = paste(
+        "Edges history for ",
+        network,
+        " network (",
+        type,
+        ")",
+        sep = ""
+      ),
       y = paste(type, "difference"),
       x = "time"
     ) +
@@ -197,12 +221,18 @@ plot_edges_history <- function(x, network, type) {
 
 # frequency of rels by age in networks at end of simulation
 summarize_final_degrees <- function(input, network) {
-  if (!inherits(input, "netsim") && !inherits(input, "netdx") && !inherits(input, "netest")) {
+  if (
+    !inherits(input, "netsim") &&
+      !inherits(input, "netdx") &&
+      !inherits(input, "netest")
+  ) {
     stop("input sim must be a netest, netdx, or netsim object.")
   }
 
   if (inherits(input, "netdx") && is.null(input$tedgelist)) {
-    stop("netdx object must contain simulated networks using option keep.tedgelist = TRUE.")
+    stop(
+      "netdx object must contain simulated networks using option keep.tedgelist = TRUE."
+    )
   }
 
   if (!network %in% c("main", "casual")) {
@@ -234,7 +264,8 @@ summarize_final_degrees <- function(input, network) {
     for (i in seq_len(nsims)) {
       # convert timed edgelist to edgelist readable by EpiModel::get_degree()
       el <- input$tedgelist[[i]]
-      active_el <- as.matrix(el[el$terminus.censored == TRUE, c("tail", "head")],
+      active_el <- as.matrix(
+        el[el$terminus.censored, c("tail", "head")],
         rownames.force = FALSE
       )
       attr(active_el, "n") <- network.size(input$nw)
@@ -256,7 +287,10 @@ summarize_final_degrees <- function(input, network) {
       coef = input$coef.form.crude,
       basis = input$newnetwork,
       constraints = input$constraints,
-      control = control.simulate.formula(MCMC.prop = ~sparse, MCMC.burnin = 2e+05),
+      control = control.simulate.formula(
+        MCMC.prop = ~sparse,
+        MCMC.burnin = 2e+05
+      ),
       dynamic = FALSE
     )
     simdat <- data.frame(
@@ -329,7 +363,11 @@ plot_final_degrees <- function(input, network, yaml_params_loc) {
 #' @importFrom stats sd
 #' @importFrom network %n%
 #' @export
-get_mean_durations <- function(sim, nets = c("main", "casual"), yaml_params_loc) {
+get_mean_durations <- function(
+  sim,
+  nets = c("main", "casual"),
+  yaml_params_loc
+) {
   x <- read_yaml(yaml_params_loc)
   main_durs <- NULL
   casual_durs <- NULL
