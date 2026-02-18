@@ -8,10 +8,15 @@ test_that("Initial nw generation sets attributes correctly", {
   expect_warning(generate_init_network(x))
 
   ## test that nw gets created properly when deg_casual = FALSE (default)
-  expect_no_warning(nw <- generate_init_network(x, seed = 123))
-  expect_s3_class(nw, "network")
+  #expect_no_warning(nw <- generate_init_network(x, seed = 123))
+  #expect_s3_class(nw, "network")
+
+  generate_init_network(x, seed = 123) |>
+    expect_no_warning() |>
+    expect_s3_class("network")
 
   ## test that none of the nodal attrs are NA
+  nw <- generate_init_network(x, seed = 123)
   attrs1 <- network::list.vertex.attributes(nw)
   for (i in seq_along(attrs1)) {
     vec <- nw %v% i
@@ -19,12 +24,16 @@ test_that("Initial nw generation sets attributes correctly", {
   }
 
   ## expect warning that deg_casual not getting set as attribute if no casual params in yaml
-  expect_warning(nw_no_cas <- generate_init_network(x, seed = 123, assign_deg_casual = TRUE))
+  generate_init_network(x, seed = 123, assign_deg_casual = TRUE) |>
+    expect_warning()
 
   ## test that nw gets created and doesn't contain deg_casual attribute
-  expect_s3_class(nw_no_cas, "network")
-  attrs <- network::list.vertex.attributes(nw_no_cas)
+  attrs <- suppressWarnings(generate_init_network(x, seed = 123, assign_deg_casual = TRUE)) |>
+    expect_s3_class("network") |>
+    network::list.vertex.attributes()
+
   expect_false("deg_casual" %in% attrs)
+
 
   # Test bad parameter inputs
   x$pop$size <- "string"
@@ -50,9 +59,10 @@ test_that("Attribute extraction only works for network objects", {
   x <- yaml::read_yaml(test_path("input", "nw_params_for_test.yaml"))
   net <- generate_init_network(x, seed = 123)
 
-  # no errors / warnings expect here
-  expect_no_warning(attrs <- get_nw_attr_vecs(net))
-  expect_no_error(get_nw_attr_vecs(net))
+  # no errors / warnings expected here
+  attrs <- get_nw_attr_vecs(net) |>
+    expect_no_warning() |>
+    expect_no_error()
 
   # check that list contains all network attributes
   attr_names <- network::list.vertex.attributes(net)

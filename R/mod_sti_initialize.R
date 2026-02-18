@@ -99,7 +99,7 @@ mod_sti_initialize <- function(x, param, init, control, s) {
     names(dat$epi) <- names(x$epi)
 
     dat$stats <- lapply(x$stats, function(var) var[[s]])
-    if (get_control(dat, "save.nwstats") == TRUE) {
+    if (get_control(dat, "save.nwstats")) {
       nsteps <- get_control(dat, "nsteps")
       start <- get_control(dat, "start")
       dat$stats$nwstats <- lapply(

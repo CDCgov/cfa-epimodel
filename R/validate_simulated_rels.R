@@ -144,7 +144,7 @@ plot_edges_history <- function(x, network, type) {
     stop("network must be either 'main', or 'casual'.")
   }
 
-  if (class(x) == "netsim") {
+  if (inherits(x, "netsim")) {
     edges_df <- get_edges_history(x, nets = network)
   } else {
     edges_df <- x
@@ -234,7 +234,7 @@ summarize_final_degrees <- function(input, network) {
     for (i in seq_len(nsims)) {
       # convert timed edgelist to edgelist readable by EpiModel::get_degree()
       el <- input$tedgelist[[i]]
-      active_el <- as.matrix(el[el$terminus.censored == TRUE, c("tail", "head")],
+      active_el <- as.matrix(el[el$terminus.censored, c("tail", "head")],
         rownames.force = FALSE
       )
       attr(active_el, "n") <- network.size(input$nw)

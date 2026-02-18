@@ -73,9 +73,10 @@ controls <- EpiModel::control.net(
 )
 
 test_that("mod_infection works with single act_rate_vec value", {
-  expect_no_error(
-    sim <- suppressMessages(EpiModel::netsim(fit, params_single_rate, inits, controls))
-  )
+  sim <- EpiModel::netsim(fit, params_single_rate, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   # And double check that infections occurred
   df <- as.data.frame(sim)
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
@@ -83,9 +84,10 @@ test_that("mod_infection works with single act_rate_vec value", {
 })
 
 test_that("mod_infection works with act_rate_vec value per age group", {
-  expect_no_error(
-    sim <- suppressMessages(EpiModel::netsim(fit, params_rate_per_group, inits, controls))
-  )
+  sim <- EpiModel::netsim(fit, params_rate_per_group, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   # And double check that infections occurred
   df <- as.data.frame(sim)
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
@@ -151,9 +153,10 @@ controls <- EpiModel::control.net(
 
 test_that("mod_infection works with directional infection probabilities", {
   # Testing MTF directionality --------------------------------------
-  expect_no_error(
-    sim_mtf <- suppressMessages(EpiModel::netsim(fit, param_only_mtf, inits, controls))
-  )
+  sim_mtf <- EpiModel::netsim(fit, param_only_mtf, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   # Convert sim to data frame for easier manipulation (only extracts epi list, not attributes)
   df <- as.data.frame(sim_mtf)
   # Sum of vector of new infections over time should be > 0
@@ -165,9 +168,10 @@ test_that("mod_infection works with directional infection probabilities", {
 
 
   # Testing FTM directionality --------------------------------------
-  expect_no_error(
-    sim_ftm <- suppressMessages(EpiModel::netsim(fit, param_only_ftm, inits, controls))
-  )
+  sim_mtf <- EpiModel::netsim(fit, param_only_ftm, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   df <- as.data.frame(sim_ftm)
   # Double check that infections occurred
   # Sum of vector of new infections over time should be > 0
@@ -187,8 +191,7 @@ static_params_cond <- list(
   inf_prob_ftm = 1,
   act_rate_vec = 2,
   acute_inf_modifier = 1,
-  acute_duration = 5,
-  act_rate_vec = 2
+  acute_duration = 5
 )
 
 ## Initial Conditions
@@ -214,11 +217,10 @@ test_that("when condom use & effectiveness = 1, we get no transmissions", {
     )
   )
 
-  expect_no_error(
-    sim <- suppressMessages(EpiModel::netsim(
-      fit, params_condom_no_trans, inits, controls
-    ))
-  )
+  sim <- EpiModel::netsim(fit, params_condom_no_trans, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   df <- as.data.frame(sim)
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_equal(sum_inc_vec, 0)
@@ -235,11 +237,10 @@ test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
     )
   )
 
-  expect_no_error(
-    sim <- suppressMessages(EpiModel::netsim(
-      fit, params_condom_no_eff, inits, controls
-    ))
-  )
+  sim <- EpiModel::netsim(fit, params_condom_no_eff, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   df <- as.data.frame(sim)
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
@@ -255,11 +256,11 @@ test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
       act_rate_vec = act_rate_vec
     )
   )
-  expect_no_error(
-    sim <- suppressMessages(EpiModel::netsim(
-      fit, params_condom_no_cond, inits, controls
-    ))
-  )
+
+  sim <- EpiModel::netsim(fit, params_condom_no_cond, inits, controls) |>
+    suppressMessages() |>
+    expect_no_error()
+
   df <- as.data.frame(sim)
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
