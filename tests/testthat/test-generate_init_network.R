@@ -28,12 +28,15 @@ test_that("Initial nw generation sets attributes correctly", {
     expect_warning()
 
   ## test that nw gets created and doesn't contain deg_casual attribute
-  attrs <- suppressWarnings(generate_init_network(x, seed = 123, assign_deg_casual = TRUE)) |>
+  attrs <- suppressWarnings(generate_init_network(
+    x,
+    seed = 123,
+    assign_deg_casual = TRUE
+  )) |>
     expect_s3_class("network") |>
     network::list.vertex.attributes()
 
   expect_false("deg_casual" %in% attrs)
-
 
   # Test bad parameter inputs
   x$pop$size <- "string"

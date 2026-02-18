@@ -32,7 +32,10 @@ mod_infection <- function(dat, at) {
   # Parameter Checks -------------------------------------------------------
   inf_probs <- c(inf_prob_mtf, inf_prob_ftm, cond_prob_vec, cond_eff)
   if (any(inf_probs < 0) || any(inf_probs > 1)) {
-    stop("All infection-related probabilities must be >=0 and <=1 (or null).", call. = FALSE)
+    stop(
+      "All infection-related probabilities must be >=0 and <=1 (or null).",
+      call. = FALSE
+    )
   }
 
   if (acute_inf_modifier < 1) {
@@ -41,24 +44,35 @@ mod_infection <- function(dat, at) {
 
   # Generate inf prob vectors if acute modifier > 1 & acute_duration defined
   if (acute_inf_modifier > 1 && !is.null(acute_duration)) {
-    inf_prob_mtf <- c(rep(inf_prob_mtf * acute_inf_modifier, acute_duration), inf_prob_mtf)
-    inf_prob_ftm <- c(rep(inf_prob_ftm * acute_inf_modifier, acute_duration), inf_prob_ftm)
+    inf_prob_mtf <- c(
+      rep(inf_prob_mtf * acute_inf_modifier, acute_duration),
+      inf_prob_mtf
+    )
+    inf_prob_ftm <- c(
+      rep(inf_prob_ftm * acute_inf_modifier, acute_duration),
+      inf_prob_ftm
+    )
     if (any(inf_prob_mtf > 1) || any(inf_prob_ftm > 1)) {
-      stop("Infection probabilities during acute infection stage exceed 1.
-      Adjust inf_prob_mtf, inf_prob_ftm, or acute_inf_modifier parameters.", call. = FALSE)
+      stop(
+        "Infection probabilities during acute infection stage exceed 1.
+      Adjust inf_prob_mtf, inf_prob_ftm, or acute_inf_modifier parameters.",
+        call. = FALSE
+      )
     }
   }
 
   # Check that act_rate_vec length is valid
   n_age_groups <- length(unique(age_group[active == 1]))
   if (!(length(act_rate_vec) == 1 || length(act_rate_vec) == n_age_groups)) {
-    stop("act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population.",
+    stop(
+      "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population.",
       call. = FALSE
     )
   }
   # Check that cond_prob_vec length is valid
   if (!(length(cond_prob_vec) == 1 || length(cond_prob_vec) == dat$num.nw)) {
-    stop("cond_prob_vec parameter length must be either 1 or equal to the number of networks in the simulation.",
+    stop(
+      "cond_prob_vec parameter length must be either 1 or equal to the number of networks in the simulation.",
       call. = FALSE
     )
   }
@@ -80,7 +94,13 @@ mod_infection <- function(dat, at) {
   # If some infected AND some susceptible, then proceed
   if (nElig > 0 && nElig < nActive) {
     # Get discordant edgelist
-    del_list <- lapply(seq_len(dat$num.nw), discord_edgelist, dat = dat, at = at, include.network = TRUE)
+    del_list <- lapply(
+      seq_len(dat$num.nw),
+      discord_edgelist,
+      dat = dat,
+      at = at,
+      include.network = TRUE
+    )
     del <- dplyr::bind_rows(del_list)
 
     # If some discordant edges, then proceed
@@ -92,17 +112,21 @@ mod_infection <- function(dat, at) {
       # Calculate infection-stage transmission rates
       linf.prob <- length(inf_prob_mtf)
       if (is.null(inf_prob_ftm)) {
-        del$transProb <- ifelse(del$infDur <= linf.prob,
+        del$transProb <- ifelse(
+          del$infDur <= linf.prob,
           inf_prob_mtf[del$infDur],
           inf_prob_mtf[linf.prob]
         )
       } else {
-        del$transProb <- ifelse(female[del$sus] == 1,
-          ifelse(del$infDur <= linf.prob,
+        del$transProb <- ifelse(
+          female[del$sus] == 1,
+          ifelse(
+            del$infDur <= linf.prob,
             inf_prob_mtf[del$infDur],
             inf_prob_mtf[linf.prob]
           ),
-          ifelse(del$infDur <= linf.prob,
+          ifelse(
+            del$infDur <= linf.prob,
             inf_prob_ftm[del$infDur],
             inf_prob_ftm[linf.prob]
           )
@@ -135,7 +159,8 @@ mod_infection <- function(dat, at) {
       del$condFinal <- del$condUse * cond_eff
 
       # Calculate final transmission probability per timestep
-      del$finalProb <- 1 - (1 - (del$transProb * (1 - del$condFinal)))^del$actRate
+      del$finalProb <- 1 -
+        (1 - (del$transProb * (1 - del$condFinal)))^del$actRate
 
       # Randomize transmissions and subset df
       transmit <- stats::rbinom(nrow(del), 1, del$finalProb)
@@ -151,7 +176,8 @@ mod_infection <- function(dat, at) {
       # Count new infections
       female_attrs <- unique(female)
       if (!all(female_attrs %in% c(0, 1))) {
-        stop("Female attribute must be coded as 0/1 only, which is required for sex-stratified epi slots.",
+        stop(
+          "Female attribute must be coded as 0/1 only, which is required for sex-stratified epi slots.",
           call. = FALSE
         )
       }
@@ -163,7 +189,6 @@ mod_infection <- function(dat, at) {
       totInf <- nInf + nInfG2
     } # end some discordant edges condition
   } # end some active discordant nodes condition
-
 
   # Output ------------------------------------------------------------------
 

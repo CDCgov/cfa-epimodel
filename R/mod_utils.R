@@ -19,14 +19,28 @@
 #'
 resimnet_updates_sti <- function(dat, at, network) {
   if (network == 0L) {
-    dat <- EpiModel::set_attr(dat, "deg_casual", EpiModel::get_degree(dat$run$el[[2]]))
-  } else if (network == 1L) {
-    dat <- EpiModel::set_attr(dat, "deg_main", EpiModel::get_degree(dat$run$el[[1]]))
-  } else if (network == 2L) {
-    dat <- EpiModel::set_attr(dat, "deg_casual", EpiModel::get_degree(dat$run$el[[2]]))
     dat <- EpiModel::set_attr(
-      dat, "deg_tot",
-      EpiModel::get_attr(dat, "deg_main") + EpiModel::get_degree(dat$run$el[[2]])
+      dat,
+      "deg_casual",
+      EpiModel::get_degree(dat$run$el[[2]])
+    )
+  } else if (network == 1L) {
+    dat <- EpiModel::set_attr(
+      dat,
+      "deg_main",
+      EpiModel::get_degree(dat$run$el[[1]])
+    )
+  } else if (network == 2L) {
+    dat <- EpiModel::set_attr(
+      dat,
+      "deg_casual",
+      EpiModel::get_degree(dat$run$el[[2]])
+    )
+    dat <- EpiModel::set_attr(
+      dat,
+      "deg_tot",
+      EpiModel::get_attr(dat, "deg_main") +
+        EpiModel::get_degree(dat$run$el[[2]])
     )
   }
   dat

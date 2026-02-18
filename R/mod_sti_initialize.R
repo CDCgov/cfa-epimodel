@@ -44,7 +44,13 @@ mod_sti_initialize <- function(x, param, init, control, s) {
     dat <- summary_nets(dat, at = 1L)
 
     ## Check for attrs required on initialization for use in vital dynamics modules
-    required_attrs_init <- c("age", "age_group", "olderpartner", "female", "race")
+    required_attrs_init <- c(
+      "age",
+      "age_group",
+      "olderpartner",
+      "female",
+      "race"
+    )
     current_attrs <- dat$run$nwterms
     missing_init_attrs <- setdiff(required_attrs_init, current_attrs)
     if (length(missing_init_attrs) > 0) {

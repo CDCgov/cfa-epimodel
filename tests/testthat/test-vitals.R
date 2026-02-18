@@ -9,7 +9,8 @@ nw <- fit$newnetwork
 params <- EpiModel::param.net(
   vital_dynamics = TRUE,
   units_per_year = 1,
-  exit_age = 50, entry_age = 15,
+  exit_age = 50,
+  entry_age = 15,
   age_group_width = 5,
   arrivalType = "departures",
   entry_female_prob = 0.5,
@@ -22,13 +23,15 @@ inits <- EpiModel::init.net(i.num = 5)
 
 ## Control Settings & Modules
 controls_aging <- EpiModel::control.net(
-  nsims = 1, nsteps = 10,
+  nsims = 1,
+  nsteps = 10,
   aging.FUN = mod_aging,
   save.other = c("attr"),
   verbose = FALSE
 )
 controls_all_vitals <- EpiModel::control.net(
-  nsims = 1, nsteps = 100, # longer time to allow for aging out and new arrivals
+  nsims = 1,
+  nsteps = 100, # longer time to allow for aging out and new arrivals
   arrivals.FUN = mod_arrivals,
   departures.FUN = mod_departures,
   aging.FUN = mod_aging,
@@ -48,7 +51,9 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
   ## compare to expected values
   ## age should increase at 1 / units_per_year per time step
   ## but first time step is at time 0, so only nsteps - 1 increments
-  age_compare <- nw %v% "age" + ((1 / sim$param$units_per_year) * (sim$control$nsteps - 1))
+  age_compare <- nw %v%
+    "age" +
+    ((1 / sim$param$units_per_year) * (sim$control$nsteps - 1))
   age_group_compare <- dplyr::case_when(
     sim_age < 20 ~ 1,
     sim_age >= 20 & sim_age < 25 ~ 2,
@@ -65,7 +70,12 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
 
 test_that("vital dynamics and arrival attr assignment working", {
   # Run simulation with all vital dynamics modules
-  sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_all_vitals))
+  sim <- suppressMessages(EpiModel::netsim(
+    fit,
+    params,
+    inits,
+    controls_all_vitals
+  ))
 
   ## First check that there are some arrivals and departures
   total_arrivals <- sum(sim$epi$a.flow$sim1, na.rm = TRUE)
@@ -82,11 +92,14 @@ test_that("vital dynamics and arrival attr assignment working", {
   expect_true(all(pop_sizes == pop_sizes[1]))
 
   # get indices of arrivals
-  arrivals_indices <- which(sim$attr$sim1$entrTime > 1 & sim$attr$sim1$active == 1)
+  arrivals_indices <- which(
+    sim$attr$sim1$entrTime > 1 & sim$attr$sim1$active == 1
+  )
 
   ## Test that ages of arrivals are within expected range
   arrivals_duration <- sim$control$nsteps - (which(sim$epi$a.flow$sim1 > 0)[1])
-  expected_age_range <- sim$param$entry_age:(sim$param$entry_age + (arrivals_duration / sim$param$units_per_year))
+  expected_age_range <- sim$param$entry_age:(sim$param$entry_age +
+    (arrivals_duration / sim$param$units_per_year))
 
   arrivals_ages <- sim$attr$sim1$age[arrivals_indices]
 
@@ -105,15 +118,26 @@ test_that("vital dynamics and arrival attr assignment working", {
     race <- sim$param$entry_race_names[i]
     expected_prop <- sim$param$entry_race_probs[i]
     expect_true(race %in% names(arrivals_races_props))
-    expect_equal(arrivals_races_props[[race]], expected_prop, tolerance = tolerance)
+    expect_equal(
+      arrivals_races_props[[race]],
+      expected_prop,
+      tolerance = tolerance
+    )
   }
 
   ## Test that sex assignment for new arrivals matches specified probability
   ## Assumes female attr is binary 0/1
   arrivals_sex <- sim$attr$sim1$female[arrivals_indices]
   arrivals_sex_props <- table(arrivals_sex) / n_arrivals
-  expected_sex_prop <- c(1 - sim$param$entry_female_prob, sim$param$entry_female_prob)
+  expected_sex_prop <- c(
+    1 - sim$param$entry_female_prob,
+    sim$param$entry_female_prob
+  )
   for (i in seq_along(expected_sex_prop)) {
-    expect_equal(arrivals_sex_props[[i]], expected_sex_prop[i], tolerance = tolerance)
+    expect_equal(
+      arrivals_sex_props[[i]],
+      expected_sex_prop[i],
+      tolerance = tolerance
+    )
   }
 })

@@ -27,11 +27,12 @@
 #'
 
 generate_init_network <- function(
-    params,
-    seed = NULL,
-    assign_deg_casual = FALSE,
-    assign_deg_main = FALSE,
-    olderpartner = FALSE) {
+  params,
+  seed = NULL,
+  assign_deg_casual = FALSE,
+  assign_deg_main = FALSE,
+  olderpartner = FALSE
+) {
   if (is.null(seed)) {
     warning("No seed specified")
   } else {
@@ -80,9 +81,14 @@ generate_init_network <- function(
   # assign age based on age group
   age <- rep(NA, num)
   # calc age group width
-  width <- ((params$pop$age$max + 1) - params$pop$age$min) / length(params$pop$age_group$levels)
+  width <- ((params$pop$age$max + 1) - params$pop$age$min) /
+    length(params$pop$age_group$levels)
   # possible ages
-  ages <- seq(from = params$pop$age$min, to = params$pop$age$max + 1, by = 1 / 365)
+  ages <- seq(
+    from = params$pop$age$min,
+    to = params$pop$age$max + 1,
+    by = 1 / 365
+  )
 
   # assign age
   for (i in seq_along(params$pop$age_group$levels)) {
@@ -147,12 +153,16 @@ generate_init_network <- function(
     attr_values$deg_main <- deg_main
   }
   if (isTRUE(assign_deg_casual) && is.null(params$casual)) {
-    warning("assign_deg_casual = TRUE, but there are no casual parameters in yaml.
-      Not setting deg_casual in network attributes.")
+    warning(
+      "assign_deg_casual = TRUE, but there are no casual parameters in yaml.
+      Not setting deg_casual in network attributes."
+    )
   }
   if (isTRUE(assign_deg_main) && is.null(params$main)) {
-    warning("assign_deg_main = TRUE, but there are no main parameters in yaml.
-      Not setting deg_main in network attributes.")
+    warning(
+      "assign_deg_main = TRUE, but there are no main parameters in yaml.
+      Not setting deg_main in network attributes."
+    )
   }
 
   # Set attributes on network
@@ -189,9 +199,19 @@ generate_init_network <- function(
 #' @export
 #'
 
-calc_targets <- function(nw, params, rel, count_type,
-                         attr_name = NULL, joint_attrs = c("age", "race"), diff = FALSE,
-                         inst_correct = FALSE, level = NULL, attr_squared = FALSE, time_unit = "weeks") {
+calc_targets <- function(
+  nw,
+  params,
+  rel,
+  count_type,
+  attr_name = NULL,
+  joint_attrs = c("age", "race"),
+  diff = FALSE,
+  inst_correct = FALSE,
+  level = NULL,
+  attr_squared = FALSE,
+  time_unit = "weeks"
+) {
   # Test that conditions are met to calculate specified target -----------------
   check_conditions(nw, params, rel, count_type, attr_name, joint_attrs)
 
@@ -203,7 +223,13 @@ calc_targets <- function(nw, params, rel, count_type,
   joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
 
   # calculate expected nodefactor targets
-  nf_joint_counts <- epimodelcfa::calc_joint_nodefactor(params, attrs, joint_attrs, joint_name, rel)
+  nf_joint_counts <- epimodelcfa::calc_joint_nodefactor(
+    params,
+    attrs,
+    joint_attrs,
+    joint_name,
+    rel
+  )
 
   # calculate expected total edges based on sum of nodefactor
   edges <- epimodelcfa::calc_edges(nf_joint_counts)
@@ -214,8 +240,14 @@ calc_targets <- function(nw, params, rel, count_type,
 
   if (count_type == "nodecov") {
     final_targets <- epimodelcfa::calc_nodecov_age(
-      params, rel, attr_name, edges,
-      level, joint_attrs, nf_joint_counts, attr_squared
+      params,
+      rel,
+      attr_name,
+      edges,
+      level,
+      joint_attrs,
+      nf_joint_counts,
+      attr_squared
     )
   }
 
@@ -242,7 +274,12 @@ calc_targets <- function(nw, params, rel, count_type,
       # targets for full joint distribution
       attr_targets <- as.numeric(nf_joint_counts)
     } else {
-      attr_targets <- epimodelcfa::calc_single_attr_nodefactor(params, attr_name, joint_attrs, nf_joint_counts)
+      attr_targets <- epimodelcfa::calc_single_attr_nodefactor(
+        params,
+        attr_name,
+        joint_attrs,
+        nf_joint_counts
+      )
     }
 
     # if nodefactor, leave targets as-is
@@ -251,7 +288,13 @@ calc_targets <- function(nw, params, rel, count_type,
     }
     # if nodematch, use nodefactor targets using nodefactor info
     if (count_type == "nodematch") {
-      final_targets <- epimodelcfa::calc_nodematch(params, attr_name, attr_targets, rel, diff)
+      final_targets <- epimodelcfa::calc_nodematch(
+        params,
+        attr_name,
+        attr_targets,
+        rel,
+        diff
+      )
     }
   }
 
@@ -380,7 +423,8 @@ calc_joint_nodefactor <- function(params, attrs, joint_attrs, joint_name, rel) {
   # shape joint nodefactor input probs into same shape as joint pop counts
   nf_joint_probs <- matrix(
     params[[rel]][["nodefactor"]][[joint_name]],
-    nrow = nrow(counts), byrow = FALSE
+    nrow = nrow(counts),
+    byrow = FALSE
   )
 
   # calculate expected nodefactor targets
@@ -392,7 +436,12 @@ calc_joint_nodefactor <- function(params, attrs, joint_attrs, joint_name, rel) {
 #' @rdname targets
 #' @param nf_joint_counts output from calc_joint_nodefactor
 #' @export
-calc_single_attr_nodefactor <- function(params, attr_name, joint_attrs, nf_joint_counts) {
+calc_single_attr_nodefactor <- function(
+  params,
+  attr_name,
+  joint_attrs,
+  nf_joint_counts
+) {
   if (attr_name == joint_attrs[1]) {
     attr_targets <- rowSums(nf_joint_counts)
   }
@@ -469,8 +518,16 @@ calc_cross_network <- function(params, rel) {
 #' @param nf_joint_counts output from calc_joint_nodefactor()
 #' @param edges output from calc_edges()
 #' @export
-calc_nodecov_age <- function(params, rel, attr_name, edges, level = NULL,
-                             joint_attrs, nf_joint_counts, attr_squared) {
+calc_nodecov_age <- function(
+  params,
+  rel,
+  attr_name,
+  edges,
+  level = NULL,
+  joint_attrs,
+  nf_joint_counts,
+  attr_squared
+) {
   # first check if cutoff exists
   cutoff <- params[[rel]][["nodecov"]][["cutoff"]]
 
@@ -484,7 +541,12 @@ calc_nodecov_age <- function(params, rel, attr_name, edges, level = NULL,
 
   if (!is.null(cutoff)) {
     # Need to re-calculate edges for that cutoff group
-    nf_counts <- calc_single_attr_nodefactor(params, attr_name = "age", joint_attrs, nf_joint_counts)
+    nf_counts <- calc_single_attr_nodefactor(
+      params,
+      attr_name = "age",
+      joint_attrs,
+      nf_joint_counts
+    )
     if (level == "low") {
       age_range <- params$pop$age$min:(cutoff - 1)
     }
@@ -523,9 +585,14 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
   if (count_type == "nodefactor") {
     high_threshold <- expected_activity * (1 + threshold)
     low_threshold <- expected_activity * (1 - threshold)
-    if ((sum(final_targets) > high_threshold) || (sum(final_targets) < low_threshold)) {
-      stop("Sum of nodefactor targets do not match expected activity,
-        check distribiton of attribute and activity levels of attribute")
+    if (
+      (sum(final_targets) > high_threshold) ||
+        (sum(final_targets) < low_threshold)
+    ) {
+      stop(
+        "Sum of nodefactor targets do not match expected activity,
+        check distribiton of attribute and activity levels of attribute"
+      )
     }
   }
 
@@ -535,9 +602,14 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
     }
   }
 
-  if (count_type %in% c("concurrent", "absdiff_sqrt_age", "nodecov", "cross_network")) {
+  if (
+    count_type %in%
+      c("concurrent", "absdiff_sqrt_age", "nodecov", "cross_network")
+  ) {
     if (length(final_targets) > 1) {
-      stop("target must be of length 1 for nodecov, concurrent, cross_network and absdiff_sqrt_age, targets")
+      stop(
+        "target must be of length 1 for nodecov, concurrent, cross_network and absdiff_sqrt_age, targets"
+      )
     }
   }
 }
@@ -545,7 +617,14 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
 #' @rdname targets
 #' @export
 # nolint start
-check_conditions <- function(nw, params, rel, count_type, attr_name, joint_attrs) {
+check_conditions <- function(
+  nw,
+  params,
+  rel,
+  count_type,
+  attr_name,
+  joint_attrs
+) {
   if (!"network" %in% class(nw)) {
     stop("inputted initial network must be a network object")
   }
@@ -555,35 +634,58 @@ check_conditions <- function(nw, params, rel, count_type, attr_name, joint_attrs
   if (!rel %in% names(params)) {
     stop("Specified relationship type does not appear in parameters list")
   }
-  if (!count_type %in% c(
-    "edges", "nodefactor", "nodematch", "absdiff_sqrt_age",
-    "concurrent", "nodecov", "cross_network"
-  )) {
-    stop("This function is only designed to estimate targets
-                for edges, nodefactor, nodematch, absdiff by sqrt age, nodecov, cross_network or concurrent ergm terms")
+  if (
+    !count_type %in%
+      c(
+        "edges",
+        "nodefactor",
+        "nodematch",
+        "absdiff_sqrt_age",
+        "concurrent",
+        "nodecov",
+        "cross_network"
+      )
+  ) {
+    stop(
+      "This function is only designed to estimate targets
+                for edges, nodefactor, nodematch, absdiff by sqrt age, nodecov, cross_network or concurrent ergm terms"
+    )
   }
   if (count_type != "edges" && !count_type %in% names(params[[rel]])) {
-    stop("Specified count type does not appear in parameter list for this relationship type")
+    stop(
+      "Specified count type does not appear in parameter list for this relationship type"
+    )
   }
   if (is.null(joint_attrs)) {
-    stop("calculating edges without joint attr distribution not currently supported")
+    stop(
+      "calculating edges without joint attr distribution not currently supported"
+    )
   }
-  if (!is.null(attr_name) && !attr_name %in% c(names(params[[rel]][[count_type]]), joint_attrs)) {
-    if ((attr_name == "age_group" && "age" %in% joint_attrs) && count_type == "nodefactor") {
-
-    } else {
-      stop("Specified attribute name does not appear in parameter list for this relationship and count type")
+  if (
+    !is.null(attr_name) &&
+      !attr_name %in% c(names(params[[rel]][[count_type]]), joint_attrs)
+  ) {
+    if (
+      (attr_name == "age_group" && "age" %in% joint_attrs) &&
+        count_type == "nodefactor"
+    ) {} else {
+      stop(
+        "Specified attribute name does not appear in parameter list for this relationship and count type"
+      )
     }
   }
 
   joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
 
   if (
-    count_type %in% c("nodefactor", "nodematch") &&
+    count_type %in%
+      c("nodefactor", "nodematch") &&
       !joint_name %in% names(params[[rel]][["nodefactor"]])
   ) {
-    stop("Joint attributes either do not appear in nodefactor list for this relationship
-    or are specifed in the wrong order")
+    stop(
+      "Joint attributes either do not appear in nodefactor list for this relationship
+    or are specifed in the wrong order"
+    )
   }
 }
 # nolint end
