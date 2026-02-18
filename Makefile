@@ -19,16 +19,17 @@ help:
 	@echo "  docs              : Runs devtools::document() within the package."
 	@echo "  check             : Runs R CMD check on the package."
 	@echo "  bic               : Builds, installs, and cleans the package."
+	@echo "  format            : Runs jarl and air to check R code formating."
 	@echo ""
 
 build: clean
 	R CMD build .
 
 install:
-	R CMD INSTALL --preclean --clean -l epimodelcfa_*.tar.gz --dependencies=TRUE
+	R CMD INSTALL --preclean --clean epimodelcfa_*.tar.gz --dependencies=TRUE
 
 clean:
-	rm -f epimodelcfa_*tar.gz
+	rm -f epimodelcfa_*.tar.gz
 
 docs:
 	Rscript -e 'devtools::document()'
@@ -36,6 +37,10 @@ docs:
 check:
 	R CMD check . --no-manual
 
+format:
+	jarl check . --fix --allow-dirty
+	air format .
+
 bic: build install clean
 
-.PHONY: help install clean docs check build bic
+.PHONY: help install clean docs check build bic format

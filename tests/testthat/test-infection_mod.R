@@ -197,7 +197,7 @@ test_that("mod_infection works with directional infection probabilities", {
   expect_equal(sum_female_inc_vec, sum_inc_vec)
 
   # Testing FTM directionality --------------------------------------
-  sim_mtf <- EpiModel::netsim(fit, param_only_ftm, inits, controls) |>
+  sim_ftm <- EpiModel::netsim(fit, param_only_ftm, inits, controls) |>
     suppressMessages() |>
     expect_no_error()
 
