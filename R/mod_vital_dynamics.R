@@ -105,10 +105,6 @@ mod_departures <- function(dat, at) {
 
   ## Summary statistics
   dat <- set_epi(dat, "d.flow", at, nDepts)
-  ### track number of edges in each network
-  for (i in seq_along(dat$run$el)) {
-    dat <- set_epi(dat, paste0("edges_net", i), at, nrow(dat$run$el[[i]]))
-  }
 
   # Return
   dat
