@@ -83,51 +83,67 @@ get_target_degrees_age_race <- function(
 }
 
 #' @title Get Edges History from Simulation
-#' @description Extracts edges history as the number of edges per time step from a simulation object,
-#' calculating the difference between the simulated edges and the target edges for both main and casual networks.
-#' NOTE: Assumes edge history is tracked in the simulation object in the "epi" list, not via setting the control
-#' parameter 'nwstats' TRUE.
+#' @description Extracts edges history as the number of edges per time step from
+#' a simulation object, calculating the difference between the simulated edges
+#' and the target edges for all networks.
+#' Assumes edge history is tracked in the simulation object via the "epi" list,
+#' not via setting the control parameter 'nwstats' TRUE.
 #' @inheritParams get_target_degrees_age_race
 #' @param sim A simulation object of class `EpiModel::netsim`.
-#' @return A data frame with time, simulation identifier, edges for main and casual networks,
-#' the difference from target edges, and the percentage difference from target edges.
-#' @importFrom rlang .data
-#' @importFrom dplyr select rename_with mutate filter group_by ungroup all_of
+#' @return A df with time, simulation id, edges for all networks,
+#' the difference from target edges, and the percentage diff from target edges.
+#' @importFrom rlang .data := !!
+#' @importFrom dplyr select mutate filter group_by ungroup all_of bind_rows
+#'             rename
 #' @importFrom tidyr pivot_longer
 #' @export
-get_edges_history <- function(sim, nets = c("main", "casual")) {
-  edges <- paste0("edges_", nets)
+get_edges_history <- function(sim, edge_prefix = "edges_net_",
+                              net_names = c("main", "casual", "inst")) {
+  # Get number of networks tracked in the simulation object
+  n_nets <- sim$num.nw
+
+  edges <- paste0(edge_prefix, seq_len(n_nets))
 
   if (!all(edges %in% names(sim$epi))) {
-    stop("Edges history not found in the simulation object.")
+    stop("Edges history for all networks not found in the simulation object.")
   }
 
-  # Extract edges target for given network
-  # always stored as first element in target.stats for each network
-  # assumes main network is first in the list
-  target_main <- sim$nwparam[[1]]$target.stats[1]
-  target_casual <- sim$nwparam[[2]]$target.stats[1]
+  edges_list <- list()
 
-  # Extract edges history from simulation object
-  sim |>
-    as.data.frame() |>
-    select(.data$time, .data$sim, all_of(edges)) |>
-    rename_with(~ gsub("edges_", "", .), all_of(edges)) |>
-    pivot_longer(cols = all_of(nets), names_to = "net", values_to = "edges") |>
-    mutate(
-      target = ifelse(.data$net == "main", target_main, target_casual),
-      absolute = .data$edges - .data$target,
-      percent = (.data$absolute / .data$target) * 100
-    ) |>
-    pivot_longer(
-      cols = c("absolute", "percent", "edges"),
-      names_to = "diff_type",
-      values_to = "diff"
-    ) |>
-    group_by(.data$time, .data$net, .data$diff_type) |>
-    mutate(mean = mean(.data$diff, na.rm = TRUE)) |>
-    ungroup() |>
-    mutate(target = ifelse(.data$diff_type == "edges", .data$target, 0))
+  for (i in seq_len(n_nets)) {
+    # Extract edges target for given network
+    # always stored as first element in target.stats for each network
+    target_edges <- sim$nwparam[[i]]$target.stats[1]
+    edge <- edges[i]
+    name <- net_names[i]
+
+    # Extract edges history from simulation object
+    edges_list[[i]] <- sim |>
+      as.data.frame() |>
+      select(.data$time, .data$sim, !!edge) |>
+      rename(!!name := !!edge) |>
+      pivot_longer(cols = !!name, names_to = "net",
+                   values_to = "edges") |>
+      mutate(
+        target = !!target_edges,
+        absolute = .data$edges - .data$target,
+        percent = (.data$absolute / .data$target) * 100
+      ) |>
+      pivot_longer(
+        cols = c("absolute", "percent", "edges"),
+        names_to = "diff_type",
+        values_to = "diff"
+      ) |>
+      group_by(.data$time, .data$net, .data$diff_type) |>
+      mutate(mean = mean(.data$diff, na.rm = TRUE)) |>
+      ungroup() |>
+      mutate(target = ifelse(.data$diff_type == "edges", .data$target, 0))
+  }
+
+  edges_df <- bind_rows(edges_list)
+
+  # Return df with edges history and diffs from target
+  edges_df
 }
 
 #' @title Plot Edges History
@@ -150,12 +166,12 @@ plot_edges_history <- function(x, network, type) {
   if (!type %in% c("percent", "absolute", "edges")) {
     stop("type must be one of 'percent', 'absolute', or 'edges'.")
   }
-  if (!network %in% c("main", "casual")) {
-    stop("network must be either 'main', or 'casual'.")
+  if (!network %in% c("main", "casual", "inst")) {
+    stop("network must be either 'main', 'casual', or 'inst'.")
   }
 
   if (inherits(x, "netsim")) {
-    edges_df <- get_edges_history(x, nets = network)
+    edges_df <- get_edges_history(x)
   } else {
     edges_df <- x
   }
@@ -172,12 +188,13 @@ plot_edges_history <- function(x, network, type) {
   }
 
   target_val <- edges_df |>
-    filter(.data$net == network, .data$diff_type == type) |>
+    filter(.data$net == !!network, .data$diff_type == !!type) |>
     pull(.data$target) |>
     unique()
 
   edges_df |>
-    filter(.data$net == network, .data$diff_type == type) |>
+    filter(.data$net == !!network, .data$diff_type == !!type,
+           .data$time >= 2) |> # time 1 = NA, so start at time 2 for plotting
     mutate(sim = as.factor(.data$sim)) |>
     ggplot(aes(x = .data$time, y = .data$diff, color = .data$sim)) +
     geom_line(alpha = 0.5) +
