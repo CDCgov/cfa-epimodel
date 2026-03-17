@@ -11,7 +11,6 @@ params <- EpiModel::param.net(
   units_per_year = 1,
   exit_age = 50,
   entry_age = 15,
-  age_group_width = 5,
   arrivalType = "departures",
   entry_female_prob = 0.5,
   entry_race_probs = c(0.6, 0.4),
@@ -55,13 +54,13 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
     "age" +
     ((1 / sim$param$units_per_year) * (sim$control$nsteps - 1))
   age_group_compare <- dplyr::case_when(
-    sim_age < 20 ~ 1,
-    sim_age >= 20 & sim_age < 25 ~ 2,
-    sim_age >= 25 & sim_age < 30 ~ 3,
-    sim_age >= 30 & sim_age < 35 ~ 4,
-    sim_age >= 35 & sim_age < 40 ~ 5,
-    sim_age >= 40 & sim_age < 45 ~ 6,
-    sim_age >= 45 ~ 7
+    age < 50 & age >= 45 ~ 7,
+    age < 45 & age >= 40 ~ 6,
+    age < 40 & age >= 35 ~ 5,
+    age < 35 & age >= 30 ~ 4,
+    age < 30 & age >= 25 ~ 3,
+    age < 25 & age >= 19 ~ 2,
+    age < 19 ~ 1
   )
 
   expect_equal(sim_age_group, age_group_compare)
