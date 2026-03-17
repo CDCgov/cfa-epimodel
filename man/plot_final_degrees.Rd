@@ -7,17 +7,21 @@
 plot_final_degrees(input, network, yaml_params_loc)
 }
 \arguments{
-\item{input}{A simulation object of class \code{EpiModel::netsim} or \code{EpiModel::netdx}.}
+\item{input}{A simulation object of class \code{EpiModel::netsim} or
+\\code{EpiModel::netdx}.}
 
-\item{network}{A character string specifying the network type, either "main" or "casual".}
+\item{network}{A character string specifying the network type, either
+"main" or "casual".}
 
 \item{yaml_params_loc}{Path to the YAML file containing target degrees.}
 }
 \value{
-A ggplot object showing the final degrees for the specified network type,
+A ggplot object showing the final degrees for the specified
+network type,
 comparing simulated degrees to target degrees.
 }
 \description{
-Plots the final degrees of individuals in the main and casual networks summarized across simulations
+Plots the final degrees of individuals in the main
+and casual networks summarized across simulations
 and compares them to target degrees extracted from a YAML file.
 }

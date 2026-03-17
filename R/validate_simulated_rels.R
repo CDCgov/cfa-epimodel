@@ -1,35 +1,31 @@
-#' @title Get Target Mean Degrees for Main and Casual Networks by Age and Race
-#' @description Extracts target degrees for main and casual networks from a YAML file. Currently assumes the YAML file
-#' includes sexual activity terms under "nodefactor" for each network stratified by a joint set of attributes,
-#' age and race, and description of attributes distributions under a sublist named "pop".
+#' @title Get Target Mean Degrees for Main and Casual Networks
+#' @description Extracts target degrees for main and casual networks
+#' from a YAML file. Currently assumes the YAML file
+#' includes sexual activity terms under "nodefactor" for each network
+#' stratified by a joint set of attributes,
+#' kept as vectors under "prediction_pop"
 #' @param yaml_params_loc Path to the YAML file containing network targets.
-#' @param nets Character vector specifying which networks to extract targets for. Default is c("main", "casual").
-#' @param joint_attrs Character vector specifying the two joint attribute to extract targets for.
-#' Default is c("age", "race").
-#' @return A data frame where each cell represents the mean degree for that age, race, and network type.
+#' @param nets Character vector specifying which networks to extract targets
+#' for.
+#' Default is c("main", "casual").
+#' @return A data frame where each cell represents the mean degree that
+#' set of attrs and network type.
 #' @importFrom yaml read_yaml
 #' @importFrom dplyr mutate group_by summarize
 #' @importFrom tidyr pivot_longer
 #' @importFrom rlang .data
 #' @export
-get_target_degrees_age_race <- function(
+get_target_degrees <- function(
   yaml_params_loc,
-  nets = c("main", "casual"),
-  joint_attrs = c("age", "race")
+  nets = c("main", "casual")
 ) {
   # load network targets from yaml file
   x <- read_yaml(yaml_params_loc)
 
-  # Validate inputs, currently only supports main and casual networks, age and race joint attributes
+  # Validate inputs, currently only supports main and casual networks
   if (sum(nets == c("main", "casual")) != 2) {
     stop(
-      "Currently only 'main' and 'casual' networks are supported, in that order."
-    )
-  }
-
-  if (sum(joint_attrs == c("age", "race")) != 2) {
-    stop(
-      "Currently only age and race are supported as joint attributes, in that order."
+      "Currently only 'main' and 'casual' networks are supported"
     )
   }
 
@@ -38,48 +34,27 @@ get_target_degrees_age_race <- function(
     stop("Specified networks not found in the YAML file.")
   }
 
-  if (length(joint_attrs) != 2) {
-    stop("joint_attrs must be a character vector of length 2.")
-  }
-
-  joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
-
-  if (
-    !joint_name %in%
-      intersect(names(x[[nets[1]]]$nodefactor), names(x[[nets[2]]]$nodefactor))
-  ) {
-    stop("Joint attribute not found in the YAML file.")
-  }
-
   if (is.null(x$pop)) {
     stop("Population attributes not found in the YAML file.")
   }
 
-  # Extract the attribute values for the specified joint attributes
-  ages <- x$pop$age$min:x$pop$age$max
-  races <- x$pop$race$levels
-
-  dat <- data.frame(
-    main = x[[nets[1]]]$nodefactor[[joint_name]],
-    casual = x[[nets[2]]]$nodefactor[[joint_name]],
-    age = rep(ages, (length(races))),
-    race = rep(races, each = length(ages))
+  # Extract the attribute values
+  dat <- tibble(
+    age = x$prediction_pop$age,
+    race = x$prediction_pop$race,
+    main = x$main$nodefactor,
+    casual = x$casual$nodefactor
   )
 
-  # Summarize mean degrees and reshape to long format
+
+  # Rreshape to long format
   dat |>
-    group_by(.data$age, .data$race) |>
-    summarize(
-      main = mean(.data$main),
-      casual = mean(.data$casual),
-      .groups = "drop"
-    ) |>
-    mutate(data = "targets") |>
     pivot_longer(
       cols = c("main", "casual"),
       names_to = "network",
       values_to = "degree"
-    )
+    ) |>
+    mutate(data = "target")
 }
 
 #' @title Get Edges History from Simulation
@@ -88,7 +63,6 @@ get_target_degrees_age_race <- function(
 #' and the target edges for all networks.
 #' Assumes edge history is tracked in the simulation object via the "epi" list,
 #' not via setting the control parameter 'nwstats' TRUE.
-#' @inheritParams get_target_degrees_age_race
 #' @param sim A simulation object of class `EpiModel::netsim`.
 #' @return A df with time, simulation id, edges for all networks,
 #' the difference from target edges, and the percentage diff from target edges.
@@ -147,13 +121,19 @@ get_edges_history <- function(sim, edge_prefix = "edges_net_",
 }
 
 #' @title Plot Edges History
-#' @description Plots the edges history for a specified network and type of difference (absolute, percent, or edges).
-#' @param x Either a data frame containing the edges history (the output of `get_edges_history()`),
+#' @description Plots the edges history for a specified network and type
+#' of difference (absolute, percent, or edges).
+#' @param x Either a data frame containing the edges history
+#' (the output of `get_edges_history()`),
 #' or a simulation object of class `EpiModel::netsim`.
-#' If a simulation object is provided, edges history will be extracted using `get_edges_history()`.
-#' @param network A character string specifying the network type, either "main" or "casual".
-#' @param type A character string specifying the type of difference to plot, either "percent", "absolute", or "edges".
-#' @return A ggplot object showing the edges history over time for the specified network and type.
+#' If a simulation object is provided, edges history will be extracted
+#' using `get_edges_history()`.
+#' @param network A character string specifying the network type,
+#' either "main" or "casual".
+#' @param type A character string specifying the type of difference to plot,
+#' either "percent", "absolute", or "edges".
+#' @return A ggplot object showing the edges history over time for the
+#' specified network and type.
 #' @importFrom ggplot2 ggplot aes geom_line geom_hline labs theme
 #' @importFrom dplyr filter pull
 #' @importFrom rlang .data
@@ -217,14 +197,21 @@ plot_edges_history <- function(x, network, type) {
 }
 
 #' @title Summarize Final Degrees from Simulation
-#' @description Summarizes the final degrees of individuals in the main and casual networks
-#' at the end of the simulation and calculates the mean degree for each age and race combination.
-#' For `EpiModel::netest` objects, a network is simulated using the "newnetwork" slot as its basis.
-#' For `EpiModel::netdx` objects, data is extracted from the "tedgelist" (timed edgelist) slot.
+#' @description Summarizes the final degrees of individuals in the
+#' main and casual networks
+#' at the end of the simulation and calculates the mean degree for
+#' each age and race combination.
+#' For `EpiModel::netest` objects, a network is simulated using the
+#' "newnetwork" slot as its basis.
+#' For `EpiModel::netdx` objects, data is extracted from the
+#' "tedgelist" (timed edgelist) slot.
 #' For `EpiModel::netsim` objects, data is extracted from the "network" slot.
-#' @param input An object of class `EpiModel::netest`, `EpiModel::netsim` or `EpiModel::netdx`.
-#' @param network A character string specifying the network type, either "main" or "casual".
-#' @return A data frame summarizing the mean degree, interquartile range (IQR), and data source
+#' @param input An object of class `EpiModel::netest`, `EpiModel::netsim`
+#' or `EpiModel::netdx`.
+#' @param network A character string specifying the network type, either
+#' "main" or "casual".
+#' @return A data frame summarizing the mean degree, interquartile range
+#' (IQR), and data source
 #' for each age and race combination
 #' @importFrom dplyr group_by summarize mutate
 #' @importFrom tidyr pivot_longer
@@ -248,7 +235,8 @@ summarize_final_degrees <- function(input, network) {
 
   if (inherits(input, "netdx") && is.null(input$tedgelist)) {
     stop(
-      "netdx object must contain simulated networks using option keep.tedgelist = TRUE."
+      "netdx object must contain simulated networks
+      using option keep.tedgelist = TRUE."
     )
   }
 
@@ -337,12 +325,16 @@ summarize_final_degrees <- function(input, network) {
 }
 
 #' @title Plot Final Degrees for Main and Casual Networks
-#' @description Plots the final degrees of individuals in the main and casual networks summarized across simulations
+#' @description Plots the final degrees of individuals in the main
+#' and casual networks summarized across simulations
 #' and compares them to target degrees extracted from a YAML file.
-#' @param input A simulation object of class `EpiModel::netsim` or `EpiModel::netdx`.
-#' @param network A character string specifying the network type, either "main" or "casual".
+#' @param input A simulation object of class `EpiModel::netsim` or
+#' \`EpiModel::netdx`.
+#' @param network A character string specifying the network type, either
+#' "main" or "casual".
 #' @param yaml_params_loc Path to the YAML file containing target degrees.
-#' @return A ggplot object showing the final degrees for the specified network type,
+#' @return A ggplot object showing the final degrees for the specified
+#' network type,
 #' comparing simulated degrees to target degrees.
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbar facet_wrap
 #' @importFrom dplyr filter mutate
@@ -354,8 +346,9 @@ plot_final_degrees <- function(input, network, yaml_params_loc) {
   }
 
   s <- summarize_final_degrees(input, network)
-  t <- get_target_degrees_age_race(yaml_params_loc) |>
-    dplyr::mutate(IQR1 = .data$degree, IQR3 = .data$degree) |> # targets do not have IQRs
+  t <- get_target_degrees(yaml_params_loc) |>
+    # targets do not have IQRs
+    dplyr::mutate(IQR1 = .data$degree, IQR3 = .data$degree) |>
     dplyr::filter(.data$network == !!network)
 
   y <- rbind(s, t)
@@ -369,12 +362,17 @@ plot_final_degrees <- function(input, network, yaml_params_loc) {
 
 
 #' @title Get Mean Durations of Relationships at End of Simulation
-#' @description Calculates the mean durations of relationships in the main and casual networks at the end
-#' of the simulation, comparing them to target durations specified in a YAML file.
+#' @description Calculates the mean durations of relationships
+#' in the main and casual
+#' networks at the end
+#' of the simulation, comparing them to target durations specified
+#' in a YAML file.
 #' @param sim A simulation object of class `EpiModel::netsim`.
-#' @param nets A character vector specifying the networks to calculate durations for, default is c("main", "casual").
+#' @param nets A character vector specifying the networks to calculate
+#' durations for, default is c("main", "casual").
 #' @param yaml_params_loc Path to the YAML file containing target durations.
-#' @return A data frame summarizing the target and simulated mean durations for each network,
+#' @return A data frame summarizing the target and simulated mean durations
+#' for each network,
 #' along with the standard deviation of the simulated durations.
 #' @importFrom yaml read_yaml
 #' @importFrom stats sd
