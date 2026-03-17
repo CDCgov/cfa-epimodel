@@ -7,17 +7,23 @@
 plot_edges_history(x, network, type)
 }
 \arguments{
-\item{x}{Either a data frame containing the edges history (the output of \code{get_edges_history()}),
+\item{x}{Either a data frame containing the edges history
+(the output of \code{get_edges_history()}),
 or a simulation object of class \code{EpiModel::netsim}.
-If a simulation object is provided, edges history will be extracted using \code{get_edges_history()}.}
+If a simulation object is provided, edges history will be extracted
+using \code{get_edges_history()}.}
 
-\item{network}{A character string specifying the network type, either "main" or "casual".}
+\item{network}{A character string specifying the network type,
+either "main" or "casual".}
 
-\item{type}{A character string specifying the type of difference to plot, either "percent", "absolute", or "edges".}
+\item{type}{A character string specifying the type of difference to plot,
+either "percent", "absolute", or "edges".}
 }
 \value{
-A ggplot object showing the edges history over time for the specified network and type.
+A ggplot object showing the edges history over time for the
+specified network and type.
 }
 \description{
-Plots the edges history for a specified network and type of difference (absolute, percent, or edges).
+Plots the edges history for a specified network and type
+of difference (absolute, percent, or edges).
 }

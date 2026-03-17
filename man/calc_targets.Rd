@@ -10,7 +10,6 @@ calc_targets(
   rel,
   count_type,
   attr_name = NULL,
-  joint_attrs = c("age", "race"),
   diff = FALSE,
   inst_correct = FALSE,
   level = NULL,
@@ -31,10 +30,7 @@ all networks estimated from data}
 in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".}
 
 \item{attr_name}{string of length 1, used for nodefactor and nodematch targets. If NULL, produces
-targets based on the two joint_attrs specifed}
-
-\item{joint_attrs}{string of length 2, the two attrs used to calculate joint distribution
-of estimates calculated from empirical data}
+targets based on the two  specifed}
 
 \item{diff}{default = FALSE, if TRUE, calculate nodematch targets among each group}
 
@@ -46,6 +42,9 @@ one-time partnerships to daily or weekly counts}
 \item{attr_squared}{for nodecov target calculation, use squared version of attribute? (usually, age)}
 
 \item{time_unit}{default = "weeks", the desired time unit for inst reporting conversion}
+
+\item{string}{of length 2, the two attrs used to calculate joint distribution
+of estimates calculated from empirical data}
 }
 \description{
 Calculates network targets given, at minimum, a starting network,

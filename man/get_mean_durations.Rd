@@ -9,15 +9,20 @@ get_mean_durations(sim, nets = c("main", "casual"), yaml_params_loc)
 \arguments{
 \item{sim}{A simulation object of class \code{EpiModel::netsim}.}
 
-\item{nets}{A character vector specifying the networks to calculate durations for, default is c("main", "casual").}
+\item{nets}{A character vector specifying the networks to calculate
+durations for, default is c("main", "casual").}
 
 \item{yaml_params_loc}{Path to the YAML file containing target durations.}
 }
 \value{
-A data frame summarizing the target and simulated mean durations for each network,
+A data frame summarizing the target and simulated mean durations
+for each network,
 along with the standard deviation of the simulated durations.
 }
 \description{
-Calculates the mean durations of relationships in the main and casual networks at the end
-of the simulation, comparing them to target durations specified in a YAML file.
+Calculates the mean durations of relationships
+in the main and casual
+networks at the end
+of the simulation, comparing them to target durations specified
+in a YAML file.
 }
