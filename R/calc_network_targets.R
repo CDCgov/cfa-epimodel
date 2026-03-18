@@ -195,6 +195,7 @@ calc_targets <- function(
   attrs <- get_nw_attr_vecs(nw)
 
   # calculate expected nodefactor targets
+  # if no grouping specified, returns total edges
   nf_counts <- calc_nodefactor(
     params,
     attrs,
@@ -240,7 +241,7 @@ calc_targets <- function(
   if (count_type == "cross_network") {
     # calc number of people in rels
     # number of people with > 1 partners
-    final_targets <- calc_cross_network(params, rel)
+    final_targets <- calc_cross_network(params, rel, edges)
   }
 
   # if true, calc nodefactor and then if true nodematch
@@ -454,9 +455,10 @@ calc_concurrent <- function(params, rel, num) {
 }
 
 #' @rdname targets
+#' @param edges output from calc_edges()
 #' @export
-calc_cross_network <- function(params, rel) {
-  params$pop$size * params[[rel]][["cross_network"]]
+calc_cross_network <- function(params, rel, edges) {
+  edges * params[[rel]][["cross_network"]] * 2
 }
 
 #' @rdname targets

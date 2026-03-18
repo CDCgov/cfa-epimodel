@@ -23,7 +23,7 @@ calc_absdiff(params, rel, count_type, edges)
 
 calc_concurrent(params, rel, num)
 
-calc_cross_network(params, rel)
+calc_cross_network(params, rel, edges)
 
 calc_nodecov_age(
   params,
