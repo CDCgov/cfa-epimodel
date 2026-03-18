@@ -1,24 +1,22 @@
 #' @title Generate Starting Network for ERGM Estimation
 #'
-#' @description Generates empty network of specified size and adds nodal attributes.
+#' @description Generates empty network of specified size
+#' and adds nodal attributes.
 #' Currently these attributes are specific to this project:
-#' a sex variable, race, age group, age, and an adjusted age variable used to capture
-#' reported age asymmetry in heterosexual partnerships in NSFG
-#' (females on average slightly younger than their male partners)
-#'
-#' @param params a list of parameters with a sublist called "pop" with the size of the network
+#' a sex variable ("female"), race, age group, age
+#' @param params a list of parameters with a sublist called "pop"
+#' with the size of the network
 #' and the named attributes and their distribution in the population
-#' @param seed optional, used to set a seed to maintain the same distribution of nodal attributes
-#' every time function is called
-#' @param assign_deg_casual default = FALSE, if TRUE, uses additional parameters information in "params" to set
-#' a plausible casual degree for each node (to help fit main/long-term partnership network,
-#' which is usually fit first in workflow)
-#' @param assign_deg_main default = FALSE, if TRUE, uses additional parameters information in "params" to set
-#' a plausible main degree for each node (to help fit casual partnership network,
+#' @param seed optional, maintains distribution of nodal attributes
+#' @param assign_deg_casual default = FALSE, if TRUE, uses additional
+#' parameters information in "params" to set
+#' a plausible casual degree for each node
+#' (can help fit main partnership network when cross-network terms present)
+#' @param assign_deg_main default = FALSE, if TRUE, uses additional
+#' parameters information in "params" to set
+#' a plausible main degree for each node
+#' (can help fit casual partnership network when cross-network terms present)
 #' when casual network fit first in workflow)
-#' @param olderpartner default = FALSE, if TRUE, adds a flag to each node indicating whether a node has a partner
-#' that is outside the age range of the simulated population, used to prevent new relationships forming
-#' in the remaining nodes
 #' @importFrom rlang .data
 #' @importFrom stats rbinom rpois
 #' @return an object of class network
@@ -99,27 +97,9 @@ generate_init_network <- function(
   # re-create prediction pop table
   pop <- tibble(
     age = params$prediction_pop$age,
-    #agesq = params$prediction_pop$agesq,
     age_group = params$prediction_pop$age_group,
     race = params$prediction_pop$race
   )
-  # make older partner flag
-  if (isTRUE(olderpartner)) {
-
-    pop$olderpartner <- params$main$olderpartner
-
-    op_probs <- attr_values |>
-      bind_cols() |>
-      mutate(age = floor(age)) |>
-      left_join(pop, by = c("age", "age_group", "race")) |>
-      pull(olderpartner)
-
-    olderpartner_vec <- rbinom(num, 1, op_probs)
-
-  } else {
-    olderpartner_vec <- rep(0, num) # no older partner flag
-  }
-  attr_values$olderpartner <- olderpartner_vec
 
   if (isTRUE(assign_deg_casual) && !is.null(params$casual)) {
 
@@ -129,7 +109,7 @@ generate_init_network <- function(
       bind_cols() |>
       mutate(age = floor(age)) |>
       left_join(pop, by = c("age", "race")) |>
-      pull(casual)
+      pull(.data$casual)
 
     deg_casual <- rbinom(num, 1, cas_probs)
 
@@ -167,30 +147,28 @@ generate_init_network <- function(
 
 #' @title Calculate Network Target Statistics
 #'
-#' @description Calculates network targets given, at minimum, a starting network,
-#' a list of parameters calculated from data, plus desired ERGM term and attribute.
-#' Function currently supports calculations for edges, nodefactor, nodematch, absdiff,
-#' and concurrent ERGM terms. Edges, nodefactor, and nodematch terms additionally require
-#' a joint distribution (default = age and race) of parameters for calculations,
-#' although these can be summed to output the marginal targets (e.g. nodefactor(~age))
-#'
+#' @description Calculates network targets given, at minimum,
+#' a starting network, a list of parameters calculated from data,
+#' plus desired ERGM term and attribute.
+#' Function currently supports calculations for edges, nodefactor,
+#' nodematch, absdiff, and concurrent ERGM terms.
 #' @param nw the network object outputted from "generate_init_network"
 #' (usually already in environment during workflow)
 #' @param params the parameter list object with parameters information for
 #' all networks estimated from data
-#' @param rel string, which relationship/network sub-lists to pull parameters from.
-#' @param count_type string, which ERGM term to generate targets for. Currently can only be
-#' in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".
-#' @param attr_name string of length 1, used for nodefactor and nodematch targets. If NULL, produces
-#' targets based on the two  specifed
-#' @param  string of length 2, the two attrs used to calculate joint distribution
-#' of estimates calculated from empirical data
-#' @param diff default = FALSE, if TRUE, calculate nodematch targets among each group
-#' @param inst_correct default = FALSE, if TRUE, adjust year-long cumulative reporting of
-#' one-time partnerships to daily or weekly counts
-#' @param time_unit default = "weeks", the desired time unit for inst reporting conversion
+#' @param rel string, which relationship/network targets are calculated
+#' @param count_type string, which ERGM term to generate targets
+#' Currently can only be in the form:
+#' "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".
+#' @param attr_name string, used for nodefactor and nodematch targets.
+#' @param diff default = FALSE, if TRUE, calc nodematch targets among each group
+#' @param inst_correct default = FALSE, if TRUE, adjust year-long
+#' cumulative reporting of one-time partnerships to daily or weekly counts
+#' @param time_unit default = "weeks",
+#' the desired time unit for inst reporting conversion
 #' @param level additional statification for nodedov target calculation function
-#' @param attr_squared for nodecov target calculation, use squared version of attribute? (usually, age)
+#' @param attr_squared for nodecov target calculation,
+#' should squared version of attribute be calculated? (usually, age)
 #' @importFrom rlang .data
 #' @export
 #'
@@ -287,7 +265,7 @@ calc_targets <- function(
   }
 
   # Check that these are reasonable targets
-  #check_targets(edges, final_targets, count_type)
+  check_targets(edges, final_targets, count_type)
 
   # Instantaneous Rel Correction
   ## correct for survey data reflecting number of one-times in last year
@@ -303,7 +281,8 @@ calc_targets <- function(
 #'
 #' @description Outputs nodal attribute vectors as list from network object
 #'
-#' @param nw a network object, in this workflow, usually the network generated from "generate_init_network"
+#' @param nw a network object,
+#' usually the network generated from "generate_init_network"
 #'
 #' @importFrom network list.vertex.attributes %v%
 #' @return A list of nodal attribute vectors
@@ -332,7 +311,8 @@ get_nw_attr_vecs <- function(nw) {
 
 #' @title Make Empirical Mixing Matrix Symmetrical
 #'
-#' @description Convert empirical mixing matrix to symmetrical matrix based on mean of upper/lower sections
+#' @description Convert empirical mixing matrix to symmetrical
+#' matrix based on mean of upper/lower sections
 #'
 #' @param mat empirical mixing matrix
 #'
@@ -358,12 +338,16 @@ matrix_symmetrical <- function(mat) {
 
 #' @title Target correction for instantaneous network
 #'
-#' @description In NSFG (and other surveys), information about the frequency of one-time (instantaneous)
-#' partnerships are reported as the cumulative number over the last 12 months. This function converts the
+#' @description In NSFG (and other surveys), information about
+#' the frequency of one-time (instantaneous)
+#' partnerships are reported as the cumulative number over the
+#' last 12 months. This function converts the
 #' empirical yearly target to per-week or per-day counts.
 #'
-#' @param targets a numeric vector of the ergm target statistics estimated from cumulative year data
-#' @param time_unit either "days" or "weeks", the unit of time represented by each discrete step in simulation model
+#' @param targets a numeric vector of the ergm target statistics
+#' estimated from cumulative year data
+#' @param time_unit either "days" or "weeks", the unit of time
+#' represented by each discrete step in simulation model
 #'
 #' @return A numeric vector
 #' @export
@@ -392,7 +376,6 @@ inst_correction <- function(targets, time_unit = NULL) {
 #' @description Small helper functions used as part of calc_targets()
 #'
 #' @inheritParams calc_targets
-#' @param joint_name Name of joint attribute as found in parameter input, calculated in calc_targets()
 #' @param num the number of nodes in the network (population size)
 #'
 #'
@@ -525,13 +508,15 @@ calc_nodecov_age <- function(
   }
 
   # nodecov target is the attr_mean multiplied by the number of edges
-  return(attr_mean * edges)
+  attr_mean * edges
 }
 
 #' @rdname targets
 #' @param edges output from calc_edges()
-#' @param final_targets vector, final ergm term targets to be checked before output
-#' @param threshold default = 0.01, proportion of expected activity based on edges that
+#' @param final_targets vector, final ergm term targets
+#' to be checked before output
+#' @param threshold default = 0.01, proportion of expected
+#' activity based on edges that
 #' calulated target is allowed within (+/- threshold)
 #' @export
 check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
@@ -568,7 +553,8 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
   ) {
     if (length(final_targets) > 1) {
       stop(
-        "target must be of length 1 for nodecov, concurrent, cross_network and absdiff_sqrt_age, targets"
+        "target must be of length 1 for nodecov, concurrent,
+        cross_network and absdiff_sqrt_age, targets"
       )
     }
   }

@@ -43,19 +43,19 @@ check_conditions(nw, params, rel, count_type, attr_name)
 \item{params}{the parameter list object with parameters information for
 all networks estimated from data}
 
-\item{rel}{string, which relationship/network sub-lists to pull parameters from.}
+\item{rel}{string, which relationship/network targets are calculated}
 
 \item{grouping_vars}{attributes to group results by, NULL for all edges}
 
-\item{attr_name}{string of length 1, used for nodefactor and nodematch targets. If NULL, produces
-targets based on the two  specifed}
+\item{attr_name}{string, used for nodefactor and nodematch targets.}
 
 \item{nf_targets}{calculated from calc_single_attr_nodefactor()}
 
-\item{diff}{default = FALSE, if TRUE, calculate nodematch targets among each group}
+\item{diff}{default = FALSE, if TRUE, calc nodematch targets among each group}
 
-\item{count_type}{string, which ERGM term to generate targets for. Currently can only be
-in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".}
+\item{count_type}{string, which ERGM term to generate targets
+Currently can only be in the form:
+"edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".}
 
 \item{edges}{output from calc_edges()}
 
@@ -65,17 +65,18 @@ in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurre
 
 \item{nf_counts}{output from calc_joint_nodefactor()}
 
-\item{attr_squared}{for nodecov target calculation, use squared version of attribute? (usually, age)}
+\item{attr_squared}{for nodecov target calculation,
+should squared version of attribute be calculated? (usually, age)}
 
-\item{final_targets}{vector, final ergm term targets to be checked before output}
+\item{final_targets}{vector, final ergm term targets
+to be checked before output}
 
-\item{threshold}{default = 0.01, proportion of expected activity based on edges that
+\item{threshold}{default = 0.01, proportion of expected
+activity based on edges that
 calulated target is allowed within (+/- threshold)}
 
 \item{nw}{the network object outputted from "generate_init_network"
 (usually already in environment during workflow)}
-
-\item{joint_name}{Name of joint attribute as found in parameter input, calculated in calc_targets()}
 
 \item{attrs}{list of network attributes}
 }
