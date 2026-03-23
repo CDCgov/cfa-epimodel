@@ -46,7 +46,6 @@ get_target_degrees <- function(
     casual = x$casual$nodefactor
   )
 
-
   # Rreshape to long format
   dat |>
     pivot_longer(
@@ -71,8 +70,11 @@ get_target_degrees <- function(
 #'             rename
 #' @importFrom tidyr pivot_longer
 #' @export
-get_edges_history <- function(sim, edge_prefix = "edges_net_",
-                              net_names = c("main", "casual", "inst")) {
+get_edges_history <- function(
+  sim,
+  edge_prefix = "edges_net_",
+  net_names = c("main", "casual", "inst")
+) {
   # Get number of networks tracked in the simulation object
   n_nets <- sim$num.nw
 
@@ -96,8 +98,7 @@ get_edges_history <- function(sim, edge_prefix = "edges_net_",
       as.data.frame() |>
       select(.data$time, .data$sim, !!edge) |>
       rename(!!name := !!edge) |>
-      pivot_longer(cols = !!name, names_to = "net",
-                   values_to = "edges") |>
+      pivot_longer(cols = !!name, names_to = "net", values_to = "edges") |>
       mutate(
         target = !!target_edges,
         absolute = .data$edges - .data$target,
@@ -173,8 +174,11 @@ plot_edges_history <- function(x, network, type) {
     unique()
 
   edges_df |>
-    filter(.data$net == !!network, .data$diff_type == !!type,
-           .data$time >= 2) |> # time 1 = NA, so start at time 2 for plotting
+    filter(
+      .data$net == !!network,
+      .data$diff_type == !!type,
+      .data$time >= 2
+    ) |> # time 1 = NA, so start at time 2 for plotting
     mutate(sim = as.factor(.data$sim)) |>
     ggplot(aes(x = .data$time, y = .data$diff, color = .data$sim)) +
     geom_line(alpha = 0.5) +

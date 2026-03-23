@@ -54,7 +54,7 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
     "age" +
     ((1 / sim$param$units_per_year) * (sim$control$nsteps - 1))
   age_group_compare <- dplyr::case_when(
-    age_compare < 50 & age_compare >= 45 ~ 7,
+    age_compare >= 45 ~ 7,
     age_compare < 45 & age_compare >= 40 ~ 6,
     age_compare < 40 & age_compare >= 35 ~ 5,
     age_compare < 35 & age_compare >= 30 ~ 4,
