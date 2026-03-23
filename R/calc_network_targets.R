@@ -102,7 +102,6 @@ generate_init_network <- function(
   )
 
   if (isTRUE(assign_deg_casual) && !is.null(params$casual)) {
-
     pop$casual <- params$casual$nodefactor
 
     cas_probs <- attr_values |>
@@ -116,7 +115,6 @@ generate_init_network <- function(
     attr_values$deg_casual <- deg_casual
   }
   if (isTRUE(assign_deg_main) && !is.null(params$main)) {
-
     pop$main <- params$main$nodefactor
 
     main_probs <- attr_values |>

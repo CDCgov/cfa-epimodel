@@ -24,7 +24,7 @@ mod_aging <- function(dat, at) {
   # Update age and age_group vectors
   age <- age + (1 / units)
   age_group <- dplyr::case_when(
-    age < 50 & age >= 45 ~ 7,
+    age >= 45 ~ 7,
     age < 45 & age >= 40 ~ 6,
     age < 40 & age >= 35 ~ 5,
     age < 35 & age >= 30 ~ 4,
@@ -145,6 +145,7 @@ mod_arrivals <- function(dat, at) {
     dat <- append_core_attr(dat, at, nArrivals)
     dat <- append_attr(dat, "status", "s", nArrivals)
     dat <- append_attr(dat, "infTime", NA, nArrivals)
+    dat <- append_attr(dat, "sympt", NA, nArrivals)
     dat <- append_attr(dat, "age", entry_age, nArrivals)
     dat <- append_attr(dat, "age_group", 1, nArrivals)
     dat <- append_attr(dat, "race", arrival_race, nArrivals)
