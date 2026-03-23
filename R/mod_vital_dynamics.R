@@ -60,7 +60,7 @@ mod_departures <- function(dat, at) {
 
   ## Query alive but past simulation age range
   ## this setup a little odd make it easier to include ASMR later
-  idsElig <- which(active == 1 & ceiling(age) >= exit_age)
+  idsElig <- which(active == 1 & age >= exit_age)
   nElig <- length(idsElig)
   nDepts <- 0
 
