@@ -30,9 +30,16 @@ mod_infection <- function(dat, at) {
   act_rate_vec <- get_param(dat, "act_rate_vec")
   cond_prob_vec <- get_param(dat, "cond_prob_vec")
   cond_eff <- get_param(dat, "cond_eff")
+  sympt_prob_m <- get_param(dat, "sympt_prob_m")
+  sympt_prob_f <- get_param(dat, "sympt_prob_f")
 
   # Parameter Checks -------------------------------------------------------
-  inf_probs <- c(inf_prob_mtf, inf_prob_ftm, cond_prob_vec, cond_eff)
+  inf_probs <- c(
+    inf_prob_mtf, inf_prob_ftm,
+    cond_prob_vec, cond_eff,
+    sympt_prob_m, sympt_prob_f
+  )
+
   if (any(inf_probs < 0) || any(inf_probs > 1)) {
     stop(
       "All infection-related probabilities must be >=0 and <=1 (or null).",
@@ -152,13 +159,22 @@ mod_infection <- function(dat, at) {
       del <- del[which(transmit == 1), ]
 
       # Set new infections attribute vectors
-      idsNewInf <- unique(del$sus)
-      status[idsNewInf] <- "i"
+      ## status, infection time
+      ids_new_inf <- unique(del$sus)
+      status[ids_new_inf] <- "i"
       dat <- set_attr(dat, "status", status)
-      inf_time[idsNewInf] <- at
+      inf_time[ids_new_inf] <- at
       dat <- set_attr(dat, "inf_time", inf_time)
-      # currenly, all infs are symptomatic
-      sympt[idsNewInf] <- 1
+      ## symptomatic status
+      sympt_prob_vec <- ifelse(
+        female[ids_new_inf] == 1,
+        sympt_prob_f, sympt_prob_m
+      )
+      sympt_vec <- which(rbinom(length(ids_new_inf), 1, sympt_prob_vec) == 1)
+      ids_sympt <- ids_new_inf[sympt_vec]
+      ids_asympt <- setdiff(ids_new_inf, ids_sympt)
+      sympt[ids_sympt] <- 1
+      sympt[ids_asympt] <- 0
       dat <- set_attr(dat, "sympt", sympt)
 
       # Count new infections
@@ -173,8 +189,8 @@ mod_infection <- function(dat, at) {
       ## Calculate new infections among each sex explicitly by code:
       ## si.flow.female0 corresponds to new infs among female == 0
       ## si.flow.female1 corresponds to new infs among female == 1
-      n_inf <- sum(female[idsNewInf] == 0, na.rm = TRUE)
-      n_inf_g2 <- sum(female[idsNewInf] == 1, na.rm = TRUE)
+      n_inf <- sum(female[ids_new_inf] == 0, na.rm = TRUE)
+      n_inf_g2 <- sum(female[ids_new_inf] == 1, na.rm = TRUE)
       tot_inf <- n_inf + n_inf_g2
     } # end some discordant edges condition
   } # end some active discordant nodes condition
