@@ -171,26 +171,26 @@ init_mgen_status <- function(dat) {
     }
   }
   if (type == "None") {
-    infTime <- rep(NA, num)
+    inf_time <- rep(NA, num)
     idsInf <- idsInf <- which(status == "i")
-    infTime[idsInf] <- 1
-    dat <- set_attr(dat, "infTime", infTime)
+    inf_time[idsInf] <- 1
+    dat <- set_attr(dat, "inf_time", inf_time)
   } else {
     idsInf <- which(status == "i")
-    infTime <- rep(NA, length(status))
-    infTime.vector <- get_init(
+    inf_time <- rep(NA, length(status))
+    inf_time.vector <- get_init(
       dat,
-      "infTime.vector",
+      "inf_time.vector",
       override.null.error = TRUE
     )
-    if (!is.null(infTime.vector)) {
-      infTime <- infTime.vector
+    if (!is.null(inf_time.vector)) {
+      inf_time <- inf_time.vector
     } else {
       if (vital && di.rate > 0) {
         if (type == "SI") {
-          infTime[idsInf] <- -rgeom(n = length(idsInf), prob = di.rate) + 2
+          inf_time[idsInf] <- -rgeom(n = length(idsInf), prob = di.rate) + 2
         } else {
-          infTime[idsInf] <- -rgeom(
+          inf_time[idsInf] <- -rgeom(
             n = length(idsInf),
             prob = di.rate + (1 - di.rate) * mean(rec.rate)
           ) +
@@ -198,26 +198,28 @@ init_mgen_status <- function(dat) {
         }
       } else {
         if (type == "SI" || mean(rec.rate) == 0) {
-          infTime[idsInf] <- ssample(
+          inf_time[idsInf] <- ssample(
             1:(-nsteps + 2),
             length(idsInf),
             replace = TRUE
           )
         } else {
-          infTime[idsInf] <- -rgeom(n = length(idsInf), prob = mean(rec.rate)) +
+          inf_time[idsInf] <- -rgeom(n = length(idsInf), prob = mean(rec.rate)) +
             2
         }
       }
     }
-    dat <- set_attr(dat, "infTime", infTime)
+    dat <- set_attr(dat, "inf_time", inf_time)
   }
   # For now, sympt status = 1 for all currenly infected
   # NA otherwise
-  sympt_vec <- rep(NA, num)
+  sympt_vec <- rec_vec <- rep(NA, num)
+
   if (length(idsInf) > 0) {
     sympt_vec[idsInf] <- 1
   }
   dat <- set_attr(dat, "sympt", sympt_vec)
+  dat <- set_attr(dat, "rec_time", rec_vec)
 
   # Return dat
   dat
