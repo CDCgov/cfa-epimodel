@@ -14,5 +14,7 @@ object and other initialization information passed from
 \item{at}{Current time step.}
 }
 \description{
-Disease transmission module accounting for age-specific activity rates
+Disease transmission module accounting for
+age-specific activity rates and increased transmission prob
+for symptomatic persons
 }
