@@ -43,8 +43,9 @@ mod_mgen_recovery <- function(dat, at) {
       n_recov_f <- sum(female[ids_recov] == 1)
       n_recov_m <- sum(female[ids_recov] == 0)
       status[ids_recov] <- rec_state
-      sympt[ids_recov] <- NA
       rec_time[ids_recov] <- at
+      inf_time[ids_recov] <- NA
+      sympt[ids_recov] <- NA
     }
   }
 
@@ -52,6 +53,7 @@ mod_mgen_recovery <- function(dat, at) {
   dat <- set_attr(dat, "status", status)
   dat <- set_attr(dat, "sympt", sympt)
   dat <- set_attr(dat, "rec_time", rec_time)
+  dat <- set_attr(dat, "inf_time", inf_time)
 
   # Update epi
   flow_name <- paste0("i", rec_state, ".flow")

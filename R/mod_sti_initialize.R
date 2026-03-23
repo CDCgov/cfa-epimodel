@@ -1,10 +1,10 @@
 #' @title Initialization Module
 #'
-#' @description Initialize networks, starting nodal attributes, infection status,
-#' and other necessary components for STI transmission models. Most of this module
-#' is adapted from \code{EpiModel}'s \code{initialize.net} function, with bespoke
+#' @description Initialize networks, starting nodal attributes,
+#' infection status,and other necessary components for STI
+#' transmission models. Most of this module is adapted from
+#' \code{EpiModel}'s \code{initialize.net} function, with bespoke
 #' checks for required attributes and infection assignment (in future)
-#'
 #'
 #' @param x If \code{control$start == 1}, either a fitted network model object
 #'        of class \code{netest} or a list of such objects. If
@@ -85,141 +85,46 @@ mod_sti_initialize <- function(x, param, init, control, s) {
   dat
 }
 
+
+#' @importFrom EpiModel get_init
 #' @export
 init_mgen_status <- function(dat) {
-  type <- get_control(dat, "type", override.null.error = TRUE)
-  type <- if (is.null(type)) {
-    "None"
-  } else {
-    type
-  }
-  nsteps <- get_control(dat, "nsteps")
-  tergmLite <- get_control(dat, "tergmLite")
-  vital <- get_param(dat, "vital")
-  groups <- get_param(dat, "groups")
-  status.vector <- get_init(dat, "status.vector", override.null.error = TRUE)
-  if (type %in% c("SIS", "SIR")) {
-    rec.rate <- get_param(dat, "rec.rate")
-  }
-  if (vital) {
-    di.rate <- get_param(dat, "di.rate")
-  }
-  i.num <- get_init(dat, "i.num", override.null.error = TRUE)
-  if (type == "SIR" && is.null(status.vector)) {
-    r.num <- get_init(dat, "r.num")
-  }
-  num <- sum(get_attr(dat, "active") == 1)
-  if (groups == 2) {
-    group <- get_attr(dat, "group")
-    if (!all(group %in% c(1, 2))) {
-      stop(
-        "When using the `group` attribute, the only authorized values",
-        " are 1 and 2.\n",
-        "The values found were: ",
-        paste0(unique(group), collapse = ", ")
-      )
-    }
-    i.num.g2 <- get_init(dat, "i.num.g2")
-    if (type == "SIR" && is.null(status.vector)) {
-      r.num.g2 <- get_init(dat, "r.num.g2", override.null.error = TRUE)
-    }
-  } else {
-    group <- rep(1, num)
-  }
-  statOnNw <- "status" %in% dat$run$nwterms
-  if (!statOnNw) {
-    if (!is.null(status.vector)) {
-      status <- status.vector
-    } else {
-      status <- rep("s", num)
-      status[sample(which(group == 1), size = i.num)] <- "i"
-      if (groups == 2) {
-        status[sample(which(group == 2), size = i.num.g2)] <- "i"
-      }
-      if (type == "SIR") {
-        status[sample(which(group == 1 & status == "s"), size = r.num)] <- "r"
-        if (groups == 2) {
-          status[sample(
-            which(group == 2 & status == "s"),
-            size = r.num.g2
-          )] <- "r"
-        }
-      }
-    }
-    dat <- set_attr(dat, "status", status)
-  } else {
-    status <- get_attr(dat, "status")
-  }
-  if (!tergmLite) {
-    if (!statOnNw) {
-      for (network in seq_len(dat$num.nw)) {
-        dat$run$nw[[network]] <- set_vertex_attribute(
-          dat$run$nw[[network]],
-          "status",
-          status
-        )
-      }
-    }
-    for (network in seq_len(dat$num.nw)) {
-      dat$run$nw[[network]] <- activate.vertex.attribute(
-        dat$run$nw[[network]],
-        prefix = "testatus",
-        value = status,
-        onset = 1,
-        terminus = Inf
-      )
-    }
-  }
-  if (type == "None") {
-    inf_time <- rep(NA, num)
-    idsInf <- idsInf <- which(status == "i")
-    inf_time[idsInf] <- 1
-    dat <- set_attr(dat, "inf_time", inf_time)
-  } else {
-    idsInf <- which(status == "i")
-    inf_time <- rep(NA, length(status))
-    inf_time.vector <- get_init(
-      dat,
-      "inf_time.vector",
-      override.null.error = TRUE
-    )
-    if (!is.null(inf_time.vector)) {
-      inf_time <- inf_time.vector
-    } else {
-      if (vital && di.rate > 0) {
-        if (type == "SI") {
-          inf_time[idsInf] <- -rgeom(n = length(idsInf), prob = di.rate) + 2
-        } else {
-          inf_time[idsInf] <- -rgeom(
-            n = length(idsInf),
-            prob = di.rate + (1 - di.rate) * mean(rec.rate)
-          ) +
-            2
-        }
-      } else {
-        if (type == "SI" || mean(rec.rate) == 0) {
-          inf_time[idsInf] <- ssample(
-            1:(-nsteps + 2),
-            length(idsInf),
-            replace = TRUE
-          )
-        } else {
-          inf_time[idsInf] <- -rgeom(n = length(idsInf), prob = mean(rec.rate)) +
-            2
-        }
-      }
-    }
-    dat <- set_attr(dat, "inf_time", inf_time)
-  }
-  # For now, sympt status = 1 for all currenly infected
-  # NA otherwise
-  sympt_vec <- rec_vec <- rep(NA, num)
 
-  if (length(idsInf) > 0) {
-    sympt_vec[idsInf] <- 1
-  }
-  dat <- set_attr(dat, "sympt", sympt_vec)
-  dat <- set_attr(dat, "rec_time", rec_vec)
+  num <- sum(get_attr(dat, "active") == 1)
+  female <- get_attr(dat, "female")
+
+  i_num <- get_init(dat, "i.num", override.null.error = TRUE)
+
+  # Defaults
+  status <- rep("s", num)
+  inf_time <- sympt <- rec_time <- rep(NA, num)
+
+  # Get initial infs
+  ids_inf <- sample(num, i_num)
+  status[ids_inf] <- "i"
+  inf_time[ids_inf] <- 1
+
+  ## symptomatic status
+  sympt_prob_f <- get_param(dat, "sympt_prob_f")
+  sympt_prob_m <- get_param(dat, "sympt_prob_m")
+
+  sympt_prob_vec <- ifelse(
+    female[ids_inf] == 1,
+    sympt_prob_f, sympt_prob_m
+  )
+  sympt_vec <- which(rbinom(length(ids_inf), 1, sympt_prob_vec) == 1)
+  ids_sympt <- ids_inf[sympt_vec]
+  ids_asympt <- setdiff(ids_inf, ids_sympt)
+  sympt[ids_sympt] <- 1
+  sympt[ids_asympt] <- 0
+
+
+  # Set attrs
+
+  dat <- set_attr(dat, "status", status)
+  dat <- set_attr(dat, "inf_time", inf_time)
+  dat <- set_attr(dat, "sympt", sympt)
+  dat <- set_attr(dat, "rec_time", rec_time)
 
   # Return dat
   dat
