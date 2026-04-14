@@ -7,8 +7,8 @@
 #'        \code{\link{netsim}}.
 #' @param at Current time step.
 #'
-#' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param append_core_attr append_attr
-#' get_edgelist apportion_lr
+#' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param
+#' append_core_attr append_attr get_edgelist apportion_lr
 #'
 #' @name vitals
 NULL

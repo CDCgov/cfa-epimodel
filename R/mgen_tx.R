@@ -7,5 +7,6 @@
 #' @export
 
 tx_mgen <- function(dat, at) {
-  return(dat) # nolint
+  # Return dat object
+  dat
 }

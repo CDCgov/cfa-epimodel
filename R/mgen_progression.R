@@ -7,5 +7,6 @@
 #' @export
 
 progression_mgen <- function(dat, at) {
-  return(dat) # nolint
+  # Return dat object
+  dat
 }
