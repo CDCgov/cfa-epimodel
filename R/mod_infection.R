@@ -35,9 +35,12 @@ mod_infection <- function(dat, at) {
 
   # Parameter Checks -------------------------------------------------------
   inf_probs <- c(
-    inf_prob_mtf, inf_prob_ftm,
-    cond_prob_vec, cond_eff,
-    sympt_prob_m, sympt_prob_f
+    inf_prob_mtf,
+    inf_prob_ftm,
+    cond_prob_vec,
+    cond_eff,
+    sympt_prob_m,
+    sympt_prob_f
   )
 
   if (any(inf_probs < 0) || any(inf_probs > 1)) {
@@ -115,14 +118,16 @@ mod_infection <- function(dat, at) {
       del$sympt_modifier <-
         ifelse(
           sympt[del$inf] == 1,
-          sympt_inf_modifier, 1
+          sympt_inf_modifier,
+          1
         )
       del$transProb <-
         ifelse(
           female[del$sus] == 1,
           inf_prob_mtf,
           inf_prob_ftm
-        ) * del$sympt_modifier
+        ) *
+        del$sympt_modifier
 
       # Add age-group specific act rates
       # Using age of youngest partner in partnerships
@@ -168,7 +173,8 @@ mod_infection <- function(dat, at) {
       ## symptomatic status
       sympt_prob_vec <- ifelse(
         female[ids_new_inf] == 1,
-        sympt_prob_f, sympt_prob_m
+        sympt_prob_f,
+        sympt_prob_m
       )
       sympt_vec <- which(rbinom(length(ids_new_inf), 1, sympt_prob_vec) == 1)
       ids_sympt <- ids_new_inf[sympt_vec]

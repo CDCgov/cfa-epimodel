@@ -135,7 +135,7 @@ get_edges_history <- function(
 #' either "percent", "absolute", or "edges".
 #' @return A ggplot object showing the edges history over time for the
 #' specified network and type.
-#' @importFrom ggplot2 ggplot aes geom_line geom_hline labs theme
+#' @importFrom ggplot2 ggplot aes geom_line geom_hline labs theme ylim
 #' @importFrom dplyr filter pull
 #' @importFrom rlang .data
 #' @importFrom viridis scale_color_viridis
@@ -173,12 +173,15 @@ plot_edges_history <- function(x, network, type) {
     pull(.data$target) |>
     unique()
 
-  edges_df |>
+  edges_df_lim <- edges_df |>
     filter(
       .data$net == !!network,
       .data$diff_type == !!type,
+      # time 1 = NA, so start at time 2 for plotting
       .data$time >= 2
-    ) |> # time 1 = NA, so start at time 2 for plotting
+    )
+
+  edges_df_lim |>
     mutate(sim = as.factor(.data$sim)) |>
     ggplot(aes(x = .data$time, y = .data$diff, color = .data$sim)) +
     geom_line(alpha = 0.5) +

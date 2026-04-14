@@ -25,9 +25,10 @@ and nodal attributes) are assumed to be the same for all networks.}
 A \code{netsim_dat} class main data object.
 }
 \description{
-Initialize networks, starting nodal attributes, infection status,
-and other necessary components for STI transmission models. Most of this module
-is adapted from \code{EpiModel}'s \code{initialize.net} function, with bespoke
+Initialize networks, starting nodal attributes,
+infection status,and other necessary components for STI
+transmission models. Most of this module is adapted from
+\code{EpiModel}'s \code{initialize.net} function, with bespoke
 checks for required attributes and infection assignment (in future)
 }
 \details{

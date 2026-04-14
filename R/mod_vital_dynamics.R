@@ -149,7 +149,7 @@ mod_arrivals <- function(dat, at) {
     dat <- append_attr(dat, "sympt", NA, nArrivals)
     dat <- append_attr(dat, "age", entry_age, nArrivals)
     dat <- append_attr(dat, "age_group", 1, nArrivals)
-    dat <- append_attr(dat, "agesq", entry_age ^ 2, nArrivals)
+    dat <- append_attr(dat, "agesq", entry_age^2, nArrivals)
     dat <- append_attr(dat, "race", arrival_race, nArrivals)
     dat <- append_attr(dat, "female", arrival_sex, nArrivals)
   }

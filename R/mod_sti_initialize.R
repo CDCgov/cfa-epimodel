@@ -89,7 +89,6 @@ mod_sti_initialize <- function(x, param, init, control, s) {
 #' @importFrom EpiModel get_init
 #' @export
 init_mgen_status <- function(dat) {
-
   num <- sum(get_attr(dat, "active") == 1)
   female <- get_attr(dat, "female")
 
@@ -110,14 +109,14 @@ init_mgen_status <- function(dat) {
 
   sympt_prob_vec <- ifelse(
     female[ids_inf] == 1,
-    sympt_prob_f, sympt_prob_m
+    sympt_prob_f,
+    sympt_prob_m
   )
   sympt_vec <- which(rbinom(length(ids_inf), 1, sympt_prob_vec) == 1)
   ids_sympt <- ids_inf[sympt_vec]
   ids_asympt <- setdiff(ids_inf, ids_sympt)
   sympt[ids_sympt] <- 1
   sympt[ids_asympt] <- 0
-
 
   # Set attrs
 

@@ -8,7 +8,6 @@
 #'
 #' @export
 mod_mgen_recovery <- function(dat, at) {
-
   # Parameters
   rec_rate_m <- 1 / get_param(dat, "inf_dur_m")
   rec_rate_f <- 1 / get_param(dat, "inf_dur_f")
@@ -21,7 +20,6 @@ mod_mgen_recovery <- function(dat, at) {
   rec_time <- get_attr(dat, "rec_time")
   female <- get_attr(dat, "female")
   sympt <- get_attr(dat, "sympt")
-
 
   # Setup initial vectors
   n_recov <- n_recov_m <- n_recov_f <- 0
