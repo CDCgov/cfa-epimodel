@@ -13,5 +13,6 @@ matrix_symmetrical(mat)
 matrix
 }
 \description{
-Convert empirical mixing matrix to symmetrical matrix based on mean of upper/lower sections
+Convert empirical mixing matrix to symmetrical
+matrix based on mean of upper/lower sections
 }

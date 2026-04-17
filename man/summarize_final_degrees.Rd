@@ -7,18 +7,25 @@
 summarize_final_degrees(input, network)
 }
 \arguments{
-\item{input}{An object of class \code{EpiModel::netest}, \code{EpiModel::netsim} or \code{EpiModel::netdx}.}
+\item{input}{An object of class \code{EpiModel::netest}, \code{EpiModel::netsim}
+or \code{EpiModel::netdx}.}
 
-\item{network}{A character string specifying the network type, either "main" or "casual".}
+\item{network}{A character string specifying the network type, either
+"main" or "casual".}
 }
 \value{
-A data frame summarizing the mean degree, interquartile range (IQR), and data source
+A data frame summarizing the mean degree, interquartile range
+(IQR), and data source
 for each age and race combination
 }
 \description{
-Summarizes the final degrees of individuals in the main and casual networks
-at the end of the simulation and calculates the mean degree for each age and race combination.
-For \code{EpiModel::netest} objects, a network is simulated using the "newnetwork" slot as its basis.
-For \code{EpiModel::netdx} objects, data is extracted from the "tedgelist" (timed edgelist) slot.
+Summarizes the final degrees of individuals in the
+main and casual networks
+at the end of the simulation and calculates the mean degree for
+each age and race combination.
+For \code{EpiModel::netest} objects, a network is simulated using the
+"newnetwork" slot as its basis.
+For \code{EpiModel::netdx} objects, data is extracted from the
+"tedgelist" (timed edgelist) slot.
 For \code{EpiModel::netsim} objects, data is extracted from the "network" slot.
 }

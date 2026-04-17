@@ -1,24 +1,22 @@
 #' @title Generate Starting Network for ERGM Estimation
 #'
-#' @description Generates empty network of specified size and adds nodal attributes.
+#' @description Generates empty network of specified size
+#' and adds nodal attributes.
 #' Currently these attributes are specific to this project:
-#' a sex variable, race, age group, age, and an adjusted age variable used to capture
-#' reported age asymmetry in heterosexual partnerships in NSFG
-#' (females on average slightly younger than their male partners)
-#'
-#' @param params a list of parameters with a sublist called "pop" with the size of the network
+#' a sex variable ("female"), race, age group, age
+#' @param params a list of parameters with a sublist called "pop"
+#' with the size of the network
 #' and the named attributes and their distribution in the population
-#' @param seed optional, used to set a seed to maintain the same distribution of nodal attributes
-#' every time function is called
-#' @param assign_deg_casual default = FALSE, if TRUE, uses additional parameters information in "params" to set
-#' a plausible casual degree for each node (to help fit main/long-term partnership network,
-#' which is usually fit first in workflow)
-#' @param assign_deg_main default = FALSE, if TRUE, uses additional parameters information in "params" to set
-#' a plausible main degree for each node (to help fit casual partnership network,
+#' @param seed optional, maintains distribution of nodal attributes
+#' @param assign_deg_casual default = FALSE, if TRUE, uses additional
+#' parameters information in "params" to set
+#' a plausible casual degree for each node
+#' (can help fit main partnership network when cross-network terms present)
+#' @param assign_deg_main default = FALSE, if TRUE, uses additional
+#' parameters information in "params" to set
+#' a plausible main degree for each node
+#' (can help fit casual partnership network when cross-network terms present)
 #' when casual network fit first in workflow)
-#' @param olderpartner default = FALSE, if TRUE, adds a flag to each node indicating whether a node has a partner
-#' that is outside the age range of the simulated population, used to prevent new relationships forming
-#' in the remaining nodes
 #' @importFrom rlang .data
 #' @importFrom stats rbinom rpois
 #' @return an object of class network
@@ -30,8 +28,7 @@ generate_init_network <- function(
   params,
   seed = NULL,
   assign_deg_casual = FALSE,
-  assign_deg_main = FALSE,
-  olderpartner = FALSE
+  assign_deg_main = FALSE
 ) {
   if (is.null(seed)) {
     warning("No seed specified")
@@ -70,86 +67,62 @@ generate_init_network <- function(
   attr_values$race <- race
 
   ### age variables
-  age_group <- sample(EpiModel::apportion_lr(
-    num,
-    params$pop$age_group$levels,
-    params$pop$age_group$dist
-  ))
-
-  attr_values$age_group <- age_group
-
-  # assign age based on age group
+  # assign age
   age <- rep(NA, num)
-  # calc age group width
-  width <- ((params$pop$age$max + 1) - params$pop$age$min) /
-    length(params$pop$age_group$levels)
-  # possible ages
+
   ages <- seq(
     from = params$pop$age$min,
-    to = params$pop$age$max + 1,
+    to = params$pop$age$max + 0.99,
     by = 1 / 365
   )
 
   # assign age
-  for (i in seq_along(params$pop$age_group$levels)) {
-    low <- params$pop$age$min + width * (i - 1)
-    high <- params$pop$age$min + width * i
-    ageopts <- ages[which(ages >= low & ages < high)]
-    indices <- which(age_group == i)
-    age[indices] <- sample(ageopts, length(indices), replace = TRUE)
-  }
+  age <- sample(ages, num, replace = TRUE)
+
   attr_values$age <- age
   attr_values$agesq <- age^2
+  attr_values$age_group <- dplyr::case_when(
+    age < 50 & age >= 45 ~ 7,
+    age < 45 & age >= 40 ~ 6,
+    age < 40 & age >= 35 ~ 5,
+    age < 35 & age >= 30 ~ 4,
+    age < 30 & age >= 25 ~ 3,
+    age < 25 & age >= 19 ~ 2,
+    age < 19 ~ 1
+  )
 
-  # make older partner flag
-  if (isTRUE(olderpartner)) {
-    op_dist <- tibble::tibble(
-      age = params$pop$age$min:params$pop$age$max,
-      prob = params$main$olderpartner
-    )
-    op_probs <- dplyr::left_join(
-      tibble::tibble(age = floor(age)),
-      op_dist,
-      by = "age"
-    )
-    olderpartner <- rbinom(num, 1, op_probs$prob)
-  } else {
-    olderpartner <- rep(0, num) # no older partner flag
-  }
-  attr_values$olderpartner <- olderpartner
+  # Assign additional degree flags (optional)
+
+  # re-create prediction pop table
+  pop <- tibble(
+    age = params$prediction_pop$age,
+    age_group = params$prediction_pop$age_group,
+    race = params$prediction_pop$race
+  )
 
   if (isTRUE(assign_deg_casual) && !is.null(params$casual)) {
-    int_age_range <- params$pop$age$min:params$pop$age$max
-    ## set obeserved casual degree from casual params by age & race
-    ref <- data.frame(
-      age = rep(int_age_range, length(params$pop$race$levels)),
-      race = rep(params$pop$race$levels, each = length(int_age_range)),
-      prob = params$casual$nodefactor$age_race
-    )
+    pop$casual <- params$casual$nodefactor
 
-    ref$comb <- paste0(ref$age, ref$race)
+    cas_probs <- attr_values |>
+      bind_cols() |>
+      mutate(age = floor(age)) |>
+      left_join(pop, by = c("age", "race")) |>
+      pull(.data$casual)
 
-    popvec <- data.frame(comb = paste0(floor(age), race)) |>
-      dplyr::left_join(ref, by = "comb")
+    deg_casual <- rbinom(num, 1, cas_probs)
 
-    deg_casual <- rbinom(num, 1, popvec$prob)
     attr_values$deg_casual <- deg_casual
   }
   if (isTRUE(assign_deg_main) && !is.null(params$main)) {
-    int_age_range <- params$pop$age$min:params$pop$age$max
-    ## set obeserved casual degree from casual params by age & race
-    ref <- data.frame(
-      age = rep(int_age_range, length(params$pop$race$levels)),
-      race = rep(params$pop$race$levels, each = length(int_age_range)),
-      prob = params$main$nodefactor$age_race
-    )
+    pop$main <- params$main$nodefactor
 
-    ref$comb <- paste0(ref$age, ref$race)
+    main_probs <- attr_values |>
+      bind_cols() |>
+      mutate(age = floor(age)) |>
+      left_join(pop, by = c("age", "race")) |>
+      pull(main)
 
-    popvec <- data.frame(comb = paste0(floor(age), race)) |>
-      dplyr::left_join(ref, by = "comb")
-
-    deg_main <- rbinom(num, 1, popvec$prob)
+    deg_main <- rbinom(num, 1, main_probs)
     attr_values$deg_main <- deg_main
   }
   if (isTRUE(assign_deg_casual) && is.null(params$casual)) {
@@ -171,30 +144,28 @@ generate_init_network <- function(
 
 #' @title Calculate Network Target Statistics
 #'
-#' @description Calculates network targets given, at minimum, a starting network,
-#' a list of parameters calculated from data, plus desired ERGM term and attribute.
-#' Function currently supports calculations for edges, nodefactor, nodematch, absdiff,
-#' and concurrent ERGM terms. Edges, nodefactor, and nodematch terms additionally require
-#' a joint distribution (default = age and race) of parameters for calculations,
-#' although these can be summed to output the marginal targets (e.g. nodefactor(~age))
-#'
+#' @description Calculates network targets given, at minimum,
+#' a starting network, a list of parameters calculated from data,
+#' plus desired ERGM term and attribute.
+#' Function currently supports calculations for edges, nodefactor,
+#' nodematch, absdiff, and concurrent ERGM terms.
 #' @param nw the network object outputted from "generate_init_network"
 #' (usually already in environment during workflow)
 #' @param params the parameter list object with parameters information for
 #' all networks estimated from data
-#' @param rel string, which relationship/network sub-lists to pull parameters from.
-#' @param count_type string, which ERGM term to generate targets for. Currently can only be
-#' in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".
-#' @param attr_name string of length 1, used for nodefactor and nodematch targets. If NULL, produces
-#' targets based on the two joint_attrs specifed
-#' @param joint_attrs string of length 2, the two attrs used to calculate joint distribution
-#' of estimates calculated from empirical data
-#' @param diff default = FALSE, if TRUE, calculate nodematch targets among each group
-#' @param inst_correct default = FALSE, if TRUE, adjust year-long cumulative reporting of
-#' one-time partnerships to daily or weekly counts
-#' @param time_unit default = "weeks", the desired time unit for inst reporting conversion
+#' @param rel string, which relationship/network targets are calculated
+#' @param count_type string, which ERGM term to generate targets
+#' Currently can only be in the form:
+#' "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".
+#' @param attr_name string, used for nodefactor and nodematch targets.
+#' @param diff default = FALSE, if TRUE, calc nodematch targets among each group
+#' @param inst_correct default = FALSE, if TRUE, adjust year-long
+#' cumulative reporting of one-time partnerships to daily or weekly counts
+#' @param time_unit default = "weeks",
+#' the desired time unit for inst reporting conversion
 #' @param level additional statification for nodedov target calculation function
-#' @param attr_squared for nodecov target calculation, use squared version of attribute? (usually, age)
+#' @param attr_squared for nodecov target calculation,
+#' should squared version of attribute be calculated? (usually, age)
 #' @importFrom rlang .data
 #' @export
 #'
@@ -205,7 +176,6 @@ calc_targets <- function(
   rel,
   count_type,
   attr_name = NULL,
-  joint_attrs = c("age", "race"),
   diff = FALSE,
   inst_correct = FALSE,
   level = NULL,
@@ -213,74 +183,68 @@ calc_targets <- function(
   time_unit = "weeks"
 ) {
   # Test that conditions are met to calculate specified target -----------------
-  check_conditions(nw, params, rel, count_type, attr_name, joint_attrs)
+  check_conditions(nw, params, rel, count_type, attr_name)
 
   # Calculate Targets -------------------------------
   ## (currently assumes we use joint distribution to make edges calculations)
   ## get pop size, attribute vectors
   num <- network::network.size(nw)
-  attrs <- epimodelcfa::get_nw_attr_vecs(nw)
-  joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
+  attrs <- get_nw_attr_vecs(nw)
 
   # calculate expected nodefactor targets
-  nf_joint_counts <- epimodelcfa::calc_joint_nodefactor(
+  # if no grouping specified, returns total edges
+  nf_counts <- calc_nodefactor(
     params,
     attrs,
-    joint_attrs,
-    joint_name,
-    rel
+    rel,
+    grouping_vars = attr_name
   )
 
   # calculate expected total edges based on sum of nodefactor
-  edges <- epimodelcfa::calc_edges(nf_joint_counts)
+  edges <- calc_edges(
+    params,
+    attrs,
+    rel,
+    grouping_vars = NULL
+  )
 
   if (count_type == "edges") {
     final_targets <- edges
   }
 
   if (count_type == "nodecov") {
-    final_targets <- epimodelcfa::calc_nodecov_age(
+    final_targets <- calc_nodecov_age(
       params,
       rel,
       attr_name,
       edges,
       level,
-      joint_attrs,
-      nf_joint_counts,
+      nf_counts,
       attr_squared
     )
   }
 
   # if true, calc target for absdiff sqrt age
   if (count_type == "absdiff_sqrt_age") {
-    final_targets <- epimodelcfa::calc_absdiff(params, rel, count_type, edges)
+    final_targets <- calc_absdiff(params, rel, count_type, edges)
   }
 
   if (count_type == "concurrent") {
     # calc number of people in rels
     # number of people with > 1 partners
-    final_targets <- epimodelcfa::calc_concurrent(params, rel, num)
+    final_targets <- calc_concurrent(params, rel, num)
   }
 
   if (count_type == "cross_network") {
     # calc number of people in rels
     # number of people with > 1 partners
-    final_targets <- epimodelcfa::calc_cross_network(params, rel)
+    final_targets <- calc_cross_network(params, rel, edges)
   }
 
   # if true, calc nodefactor and then if true nodematch
   if (count_type %in% c("nodefactor", "nodematch")) {
-    if (is.null(attr_name)) {
-      # targets for full joint distribution
-      attr_targets <- as.numeric(nf_joint_counts)
-    } else {
-      attr_targets <- epimodelcfa::calc_single_attr_nodefactor(
-        params,
-        attr_name,
-        joint_attrs,
-        nf_joint_counts
-      )
-    }
+    # targets for full joint distribution
+    attr_targets <- as.numeric(nf_counts)
 
     # if nodefactor, leave targets as-is
     if (count_type == "nodefactor") {
@@ -288,7 +252,7 @@ calc_targets <- function(
     }
     # if nodematch, use nodefactor targets using nodefactor info
     if (count_type == "nodematch") {
-      final_targets <- epimodelcfa::calc_nodematch(
+      final_targets <- calc_nodematch(
         params,
         attr_name,
         attr_targets,
@@ -299,23 +263,24 @@ calc_targets <- function(
   }
 
   # Check that these are reasonable targets
-  epimodelcfa::check_targets(edges, final_targets, count_type)
+  check_targets(edges, final_targets, count_type)
 
   # Instantaneous Rel Correction
   ## correct for survey data reflecting number of one-times in last year
   if (rel == "inst" && isTRUE(inst_correct)) {
-    final_targets <- epimodelcfa::inst_correction(final_targets, time_unit)
+    final_targets <- inst_correction(final_targets, time_unit)
   }
 
   # Output targets
-  return(final_targets)
+  round(final_targets)
 }
 
 #' @title Extract Nodal Attribute Vectors from Network
 #'
 #' @description Outputs nodal attribute vectors as list from network object
 #'
-#' @param nw a network object, in this workflow, usually the network generated from "generate_init_network"
+#' @param nw a network object,
+#' usually the network generated from "generate_init_network"
 #'
 #' @importFrom network list.vertex.attributes %v%
 #' @return A list of nodal attribute vectors
@@ -344,7 +309,8 @@ get_nw_attr_vecs <- function(nw) {
 
 #' @title Make Empirical Mixing Matrix Symmetrical
 #'
-#' @description Convert empirical mixing matrix to symmetrical matrix based on mean of upper/lower sections
+#' @description Convert empirical mixing matrix to symmetrical
+#' matrix based on mean of upper/lower sections
 #'
 #' @param mat empirical mixing matrix
 #'
@@ -370,12 +336,16 @@ matrix_symmetrical <- function(mat) {
 
 #' @title Target correction for instantaneous network
 #'
-#' @description In NSFG (and other surveys), information about the frequency of one-time (instantaneous)
-#' partnerships are reported as the cumulative number over the last 12 months. This function converts the
+#' @description In NSFG (and other surveys), information about
+#' the frequency of one-time (instantaneous)
+#' partnerships are reported as the cumulative number over the
+#' last 12 months. This function converts the
 #' empirical yearly target to per-week or per-day counts.
 #'
-#' @param targets a numeric vector of the ergm target statistics estimated from cumulative year data
-#' @param time_unit either "days" or "weeks", the unit of time represented by each discrete step in simulation model
+#' @param targets a numeric vector of the ergm target statistics
+#' estimated from cumulative year data
+#' @param time_unit either "days" or "weeks", the unit of time
+#' represented by each discrete step in simulation model
 #'
 #' @return A numeric vector
 #' @export
@@ -404,7 +374,6 @@ inst_correction <- function(targets, time_unit = NULL) {
 #' @description Small helper functions used as part of calc_targets()
 #'
 #' @inheritParams calc_targets
-#' @param joint_name Name of joint attribute as found in parameter input, calculated in calc_targets()
 #' @param num the number of nodes in the network (population size)
 #'
 #'
@@ -412,60 +381,37 @@ inst_correction <- function(targets, time_unit = NULL) {
 #' @name targets
 NULL
 
-
 #' @rdname targets
-#' @param attrs which two attributes?
+#' @param nw_attrs list of network attribute vectors
+#' @param grouping_vars attributes to group results by, NULL for all edges
+#' @importFrom tibble tibble
+#' @importFrom dplyr group_by summarize bind_cols left_join n pick
+#' @importFrom rlang .data
 #' @export
-calc_joint_nodefactor <- function(params, attrs, joint_attrs, joint_name, rel) {
-  # pop counts by joint attr dist
-  counts <- stats::xtabs(~ attrs[[joint_attrs[1]]] + attrs[[joint_attrs[2]]])
-
-  # shape joint nodefactor input probs into same shape as joint pop counts
-  nf_joint_probs <- matrix(
-    params[[rel]][["nodefactor"]][[joint_name]],
-    nrow = nrow(counts),
-    byrow = FALSE
+calc_nodefactor <- function(params, nw_attrs, rel, grouping_vars = NULL) {
+  # Re-create prediction pop table
+  pop <- tibble(
+    age = params$prediction_pop$age,
+    agesq = params$prediction_pop$agesq,
+    age_group = params$prediction_pop$age_group,
+    race = params$prediction_pop$race,
+    deg = params[[rel]][["nodefactor"]]
   )
 
-  # calculate expected nodefactor targets
-  nf_joint_counts <- counts * nf_joint_probs
+  # Convert nw attrs list to df, add nf probs, calculate by group
+  nf <- nw_attrs |>
+    bind_cols() |>
+    group_by(.data$age, .data$race) |>
+    summarize(pop_counts = n(), .groups = "drop") |>
+    left_join(pop, by = c("age", "race")) |>
+    mutate(rel_counts = .data$pop_counts * .data$deg) |>
+    group_by(pick(!!grouping_vars)) |>
+    summarize(rels = sum(.data$rel_counts)) |>
+    pull(.data$rels) |>
+    as.numeric()
 
-  return(nf_joint_counts) # nolint
-}
-
-#' @rdname targets
-#' @param nf_joint_counts output from calc_joint_nodefactor
-#' @export
-calc_single_attr_nodefactor <- function(
-  params,
-  attr_name,
-  joint_attrs,
-  nf_joint_counts
-) {
-  if (attr_name == joint_attrs[1]) {
-    attr_targets <- rowSums(nf_joint_counts)
-  }
-  if (attr_name == joint_attrs[2]) {
-    attr_targets <- colSums(nf_joint_counts)
-  }
-
-  # condense targets from age into age_group if requested
-  if (attr_name == "age_group" && joint_attrs[1] == "age") {
-    age_attr_targets <- rowSums(nf_joint_counts)
-    age_range <- ((params$pop$age$max + 1) - params$pop$age$min)
-    grp_width <- age_range / length(params$pop$age_group$levels)
-    ngrps <- age_range / grp_width
-
-    attr_targets <- tibble::tibble(
-      grps = rep(1:ngrps, each = grp_width),
-      tar = age_attr_targets
-    ) |>
-      dplyr::group_by(.data$grps) |>
-      dplyr::summarize(tars = sum(.data$tar)) |>
-      dplyr::pull(.data$tars)
-  }
-
-  return(attr_targets) # nolint
+  # Return
+  nf
 }
 
 #' @rdname targets
@@ -477,21 +423,18 @@ calc_nodematch <- function(params, attr_name, nf_targets, rel, diff) {
   }
   attr_probs_nodematch <- params[[rel]][["nodematch"]][[attr_name]]
   if (diff) {
-    # further refine nodefactor targets to get nodematch
-    # how many edges of the estimated above activity are matching among each group
-    final_targets <- attr_probs_nodematch * nf_targets / 2
+    final_targets <- attr_probs_nodematch$each * nf_targets / 2
   } else {
     # if diff = FALSE, then use the same attr_probs_nodematch for all edges
-    final_targets <- attr_probs_nodematch * sum(nf_targets) / 2
+    final_targets <- attr_probs_nodematch$global * sum(nf_targets) / 2
   }
   final_targets
 }
 
 #' @rdname targets
-#' @param nf_joint_counts output from calc_joint_nodefactor()
 #' @export
-calc_edges <- function(nf_joint_counts) {
-  return(sum(nf_joint_counts) / 2) # nolint
+calc_edges <- function(params, nw_attrs, rel, grouping_vars = NULL) {
+  calc_nodefactor(params, nw_attrs, rel, grouping_vars) / 2
 }
 
 #' @rdname targets
@@ -499,23 +442,24 @@ calc_edges <- function(nf_joint_counts) {
 #' @export
 calc_absdiff <- function(params, rel, count_type, edges) {
   avg <- params[[rel]][[count_type]]
-  return(avg * edges) # nolint
+  avg * edges
 }
 
 #' @rdname targets
 #' @export
 calc_concurrent <- function(params, rel, num) {
-  return(num * params[[rel]][["concurrent"]]) # nolint
+  num * params[[rel]][["concurrent"]]
 }
 
 #' @rdname targets
+#' @param edges output from calc_edges()
 #' @export
-calc_cross_network <- function(params, rel) {
-  return(params$pop$size * params[[rel]][["cross_network"]]) # nolint
+calc_cross_network <- function(params, rel, edges) {
+  edges * params[[rel]][["cross_network"]] * 2
 }
 
 #' @rdname targets
-#' @param nf_joint_counts output from calc_joint_nodefactor()
+#' @param nf_counts output from calc_joint_nodefactor()
 #' @param edges output from calc_edges()
 #' @export
 calc_nodecov_age <- function(
@@ -524,8 +468,7 @@ calc_nodecov_age <- function(
   attr_name,
   edges,
   level = NULL,
-  joint_attrs,
-  nf_joint_counts,
+  nf_counts,
   attr_squared
 ) {
   # first check if cutoff exists
@@ -541,11 +484,10 @@ calc_nodecov_age <- function(
 
   if (!is.null(cutoff)) {
     # Need to re-calculate edges for that cutoff group
-    nf_counts <- calc_single_attr_nodefactor(
+    nf_counts <- calc_nodefactor(
       params,
-      attr_name = "age",
-      joint_attrs,
-      nf_joint_counts
+      grouping_vars = "age",
+      nf_counts
     )
     if (level == "low") {
       age_range <- params$pop$age$min:(cutoff - 1)
@@ -565,13 +507,15 @@ calc_nodecov_age <- function(
   }
 
   # nodecov target is the attr_mean multiplied by the number of edges
-  return(attr_mean * edges)
+  attr_mean * edges
 }
 
 #' @rdname targets
 #' @param edges output from calc_edges()
-#' @param final_targets vector, final ergm term targets to be checked before output
-#' @param threshold default = 0.01, proportion of expected activity based on edges that
+#' @param final_targets vector, final ergm term targets
+#' to be checked before output
+#' @param threshold default = 0.01, proportion of expected
+#' activity based on edges that
 #' calulated target is allowed within (+/- threshold)
 #' @export
 check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
@@ -608,7 +552,8 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
   ) {
     if (length(final_targets) > 1) {
       stop(
-        "target must be of length 1 for nodecov, concurrent, cross_network and absdiff_sqrt_age, targets"
+        "target must be of length 1 for nodecov, concurrent,
+        cross_network and absdiff_sqrt_age, targets"
       )
     }
   }
@@ -622,8 +567,7 @@ check_conditions <- function(
   params,
   rel,
   count_type,
-  attr_name,
-  joint_attrs
+  attr_name
 ) {
   if (!"network" %in% class(nw)) {
     stop("inputted initial network must be a network object")
@@ -654,37 +598,6 @@ check_conditions <- function(
   if (count_type != "edges" && !count_type %in% names(params[[rel]])) {
     stop(
       "Specified count type does not appear in parameter list for this relationship type"
-    )
-  }
-  if (is.null(joint_attrs)) {
-    stop(
-      "calculating edges without joint attr distribution not currently supported"
-    )
-  }
-  if (
-    !is.null(attr_name) &&
-      !attr_name %in% c(names(params[[rel]][[count_type]]), joint_attrs)
-  ) {
-    if (
-      (attr_name == "age_group" && "age" %in% joint_attrs) &&
-        count_type == "nodefactor"
-    ) {} else {
-      stop(
-        "Specified attribute name does not appear in parameter list for this relationship and count type"
-      )
-    }
-  }
-
-  joint_name <- paste0(joint_attrs[1], "_", joint_attrs[2])
-
-  if (
-    count_type %in%
-      c("nodefactor", "nodematch") &&
-      !joint_name %in% names(params[[rel]][["nodefactor"]])
-  ) {
-    stop(
-      "Joint attributes either do not appear in nodefactor list for this relationship
-    or are specifed in the wrong order"
     )
   }
 }

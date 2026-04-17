@@ -10,7 +10,6 @@ calc_targets(
   rel,
   count_type,
   attr_name = NULL,
-  joint_attrs = c("age", "race"),
   diff = FALSE,
   inst_correct = FALSE,
   level = NULL,
@@ -25,33 +24,31 @@ calc_targets(
 \item{params}{the parameter list object with parameters information for
 all networks estimated from data}
 
-\item{rel}{string, which relationship/network sub-lists to pull parameters from.}
+\item{rel}{string, which relationship/network targets are calculated}
 
-\item{count_type}{string, which ERGM term to generate targets for. Currently can only be
-in the form "edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".}
+\item{count_type}{string, which ERGM term to generate targets
+Currently can only be in the form:
+"edges", "nodefactor", "nodematch", "absdiff_sqrt_age", or "concurrent".}
 
-\item{attr_name}{string of length 1, used for nodefactor and nodematch targets. If NULL, produces
-targets based on the two joint_attrs specifed}
+\item{attr_name}{string, used for nodefactor and nodematch targets.}
 
-\item{joint_attrs}{string of length 2, the two attrs used to calculate joint distribution
-of estimates calculated from empirical data}
+\item{diff}{default = FALSE, if TRUE, calc nodematch targets among each group}
 
-\item{diff}{default = FALSE, if TRUE, calculate nodematch targets among each group}
-
-\item{inst_correct}{default = FALSE, if TRUE, adjust year-long cumulative reporting of
-one-time partnerships to daily or weekly counts}
+\item{inst_correct}{default = FALSE, if TRUE, adjust year-long
+cumulative reporting of one-time partnerships to daily or weekly counts}
 
 \item{level}{additional statification for nodedov target calculation function}
 
-\item{attr_squared}{for nodecov target calculation, use squared version of attribute? (usually, age)}
+\item{attr_squared}{for nodecov target calculation,
+should squared version of attribute be calculated? (usually, age)}
 
-\item{time_unit}{default = "weeks", the desired time unit for inst reporting conversion}
+\item{time_unit}{default = "weeks",
+the desired time unit for inst reporting conversion}
 }
 \description{
-Calculates network targets given, at minimum, a starting network,
-a list of parameters calculated from data, plus desired ERGM term and attribute.
-Function currently supports calculations for edges, nodefactor, nodematch, absdiff,
-and concurrent ERGM terms. Edges, nodefactor, and nodematch terms additionally require
-a joint distribution (default = age and race) of parameters for calculations,
-although these can be summed to output the marginal targets (e.g. nodefactor(~age))
+Calculates network targets given, at minimum,
+a starting network, a list of parameters calculated from data,
+plus desired ERGM term and attribute.
+Function currently supports calculations for edges, nodefactor,
+nodematch, absdiff, and concurrent ERGM terms.
 }

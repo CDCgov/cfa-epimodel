@@ -3,13 +3,10 @@ test_that("Initial nw generation sets attributes correctly", {
   # import parameters
   x <- yaml::read_yaml(test_path("input", "nw_params_for_test.yaml"))
 
-  # Test functionality with good params (testing function options & object creation)
+  # Test functionality with good params
+  ## (testing function options & object creation)
   ## expect warning when seed not specifed
   expect_warning(generate_init_network(x))
-
-  ## test that nw gets created properly when deg_casual = FALSE (default)
-  #expect_no_warning(nw <- generate_init_network(x, seed = 123))
-  #expect_s3_class(nw, "network")
 
   generate_init_network(x, seed = 123) |>
     expect_no_warning() |>
@@ -23,7 +20,8 @@ test_that("Initial nw generation sets attributes correctly", {
     expect_equal(sum(is.na(vec)), 0)
   }
 
-  ## expect warning that deg_casual not getting set as attribute if no casual params in yaml
+  ## expect warning that deg_casual not getting set as
+  ## attribute if no casual params in yaml
   generate_init_network(x, seed = 123, assign_deg_casual = TRUE) |>
     expect_warning()
 
@@ -47,7 +45,8 @@ test_that("Initial nw generation sets attributes correctly", {
   x$pop$female$dist <- c(0.6, 0.5)
   expect_error(generate_init_network(x, seed = 123))
 
-  ## error if sum of any of the categorical dists != 1 or don't match n categories
+  ## error if sum of any of the categorical dists
+  ## != 1 or don't match n categories
   ## (EpiModel apportion_lr error)
   x$pop$female$dist <- c(0.5, 0.5)
   x$pop$race$dist <- rep(0.1, 4)

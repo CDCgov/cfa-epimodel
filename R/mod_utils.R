@@ -1,17 +1,20 @@
 #' @title Updates to Network Attributes During Mpox Resimulation
 #'
-#' @description This function updates the network-related degree attributes on the three-layer
-#' MSM sexual network that account for the resimulated network structure.
+#' @description This function updates the network-related degree
+#' attributes on the three-layer MSM sexual network that account for the
+#' resimulated network structure.
 #'
 #' @inheritParams vitals
-#' @param network Integer for network number (values 1, 2, or 3 for main, casual, and one-time
-#'                networks).
+#' @param network Integer for network number (values 1, 2, or 3 for main,
+#' casual, and one-time networks).
 #'
 #' @details
-#' This function is called between network resimulations in [`EpiModel::resim_nets`], passed into
-#' [`EpiModel::control.net`] through the `dat.updates` argument. This implementation updates degree attributes
-#' calculated from the current network snapshot for use as ERGM terms in the other network layers
-#' (e.g., degree in the casual network is a function of the degree in the main network). See the
+#' This function is called between network resimulations in
+#' [`EpiModel::resim_nets`], passed into [`EpiModel::control.net`]
+#' through the `dat.updates` argument. This implementation updates degree
+#' attributes calculated from the current network snapshot for use as ERGM
+#' terms in the other network layers (e.g., degree in the casual network
+#' is a function of the degree in the main network). See the
 #' general documentation for `dat.updates` at [`EpiModel::control.net`].
 #'
 #'
