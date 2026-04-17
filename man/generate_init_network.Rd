@@ -8,8 +8,7 @@ generate_init_network(
   params,
   seed = NULL,
   assign_deg_casual = FALSE,
-  assign_deg_main = FALSE,
-  olderpartner = FALSE
+  assign_deg_main = FALSE
 )
 }
 \arguments{

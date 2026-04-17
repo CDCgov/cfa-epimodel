@@ -28,8 +28,7 @@ generate_init_network <- function(
   params,
   seed = NULL,
   assign_deg_casual = FALSE,
-  assign_deg_main = FALSE,
-  olderpartner = FALSE
+  assign_deg_main = FALSE
 ) {
   if (is.null(seed)) {
     warning("No seed specified")
@@ -383,7 +382,7 @@ inst_correction <- function(targets, time_unit = NULL) {
 NULL
 
 #' @rdname targets
-#' @param attrs list of network attributes
+#' @param nw_attrs list of network attribute vectors
 #' @param grouping_vars attributes to group results by, NULL for all edges
 #' @importFrom tibble tibble
 #' @importFrom dplyr group_by summarize bind_cols left_join n pick

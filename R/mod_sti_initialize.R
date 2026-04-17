@@ -85,7 +85,14 @@ mod_sti_initialize <- function(x, param, init, control, s) {
   dat
 }
 
-
+#' @title Initialize Infection Status
+#' @description Initialize infection status and related attributes for STI
+#' transmission models. This function is called within \code{mod_sti_initialize}
+#' to set up the initial infection status of the population based on the number
+#' of initial infections specified in the \code{init} object.
+#' @inheritParams mod_sti_initialize
+#' @return A modified \code{dat} object with initialized infections
+#' @rdname mod_sti_initialize
 #' @importFrom EpiModel get_init
 #' @export
 init_mgen_status <- function(dat) {

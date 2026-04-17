@@ -12,6 +12,13 @@ get_edges_history(
 }
 \arguments{
 \item{sim}{A simulation object of class \code{EpiModel::netsim}.}
+
+\item{edge_prefix}{A character string specifying the prefix used for edge
+history in the simulation object. Default is "edges_net_".}
+
+\item{net_names}{A character vector specifying the names of the networks
+corresponding to the edge history in the simulation object. Default is
+c("main", "casual", "inst").}
 }
 \value{
 A df with time, simulation id, edges for all networks,

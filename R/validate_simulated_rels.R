@@ -63,6 +63,11 @@ get_target_degrees <- function(
 #' Assumes edge history is tracked in the simulation object via the "epi" list,
 #' not via setting the control parameter 'nwstats' TRUE.
 #' @param sim A simulation object of class `EpiModel::netsim`.
+#' @param edge_prefix A character string specifying the prefix used for edge
+#' history in the simulation object. Default is "edges_net_".
+#' @param net_names A character vector specifying the names of the networks
+#' corresponding to the edge history in the simulation object. Default is
+#' c("main", "casual", "inst").
 #' @return A df with time, simulation id, edges for all networks,
 #' the difference from target edges, and the percentage diff from target edges.
 #' @importFrom rlang .data := !!
@@ -336,7 +341,7 @@ summarize_final_degrees <- function(input, network) {
 #' and casual networks summarized across simulations
 #' and compares them to target degrees extracted from a YAML file.
 #' @param input A simulation object of class `EpiModel::netsim` or
-#' \`EpiModel::netdx`.
+#' `EpiModel::netdx`.
 #' @param network A character string specifying the network type, either
 #' "main" or "casual".
 #' @param yaml_params_loc Path to the YAML file containing target degrees.
@@ -345,7 +350,7 @@ summarize_final_degrees <- function(input, network) {
 #' comparing simulated degrees to target degrees.
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbar facet_wrap
 #' @importFrom dplyr filter mutate
-#' @importFrom rlang .data
+#' @importFrom rlang .datamake
 #' @export
 plot_final_degrees <- function(input, network, yaml_params_loc) {
   if (!network %in% c("main", "casual")) {

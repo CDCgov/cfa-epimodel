@@ -43,6 +43,8 @@ check_conditions(nw, params, rel, count_type, attr_name)
 \item{params}{the parameter list object with parameters information for
 all networks estimated from data}
 
+\item{nw_attrs}{list of network attribute vectors}
+
 \item{rel}{string, which relationship/network targets are calculated}
 
 \item{grouping_vars}{attributes to group results by, NULL for all edges}
@@ -77,8 +79,6 @@ calulated target is allowed within (+/- threshold)}
 
 \item{nw}{the network object outputted from "generate_init_network"
 (usually already in environment during workflow)}
-
-\item{attrs}{list of network attributes}
 }
 \description{
 Small helper functions used as part of calc_targets()

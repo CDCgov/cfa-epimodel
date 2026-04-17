@@ -2,9 +2,12 @@
 % Please edit documentation in R/mod_sti_initialize.R
 \name{mod_sti_initialize}
 \alias{mod_sti_initialize}
+\alias{init_mgen_status}
 \title{Initialization Module}
 \usage{
 mod_sti_initialize(x, param, init, control, s)
+
+init_mgen_status(dat)
 }
 \arguments{
 \item{x}{If \code{control$start == 1}, either a fitted network model object
@@ -23,6 +26,8 @@ and nodal attributes) are assumed to be the same for all networks.}
 }
 \value{
 A \code{netsim_dat} class main data object.
+
+A modified \code{dat} object with initialized infections
 }
 \description{
 Initialize networks, starting nodal attributes,
@@ -30,6 +35,11 @@ infection status,and other necessary components for STI
 transmission models. Most of this module is adapted from
 \code{EpiModel}'s \code{initialize.net} function, with bespoke
 checks for required attributes and infection assignment (in future)
+
+Initialize infection status and related attributes for STI
+transmission models. This function is called within \code{mod_sti_initialize}
+to set up the initial infection status of the population based on the number
+of initial infections specified in the \code{init} object.
 }
 \details{
 When re-initializing a simulation, the \code{netsim} object passed
