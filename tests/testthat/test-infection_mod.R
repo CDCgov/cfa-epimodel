@@ -8,77 +8,27 @@ ag <- fit$newnetwork %v% "age_group"
 ngrps <- length(unique(ag))
 
 ## 1 time step = 1 year, to speed aging processes
-## Parameters
-static_params <- list(
-  inf_prob_mtf = 0.5,
-  inf_prob_ftm = 0.5,
-  acute_inf_modifier = 2,
-  acute_duration = 5,
-  cond_prob_vec = 0,
-  cond_eff = 0
-)
-params_single_rate <- with(
-  static_params,
-  EpiModel::param.net(
-    inf_prob_mtf = inf_prob_mtf,
-    inf_prob_ftm = inf_prob_ftm,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
-    cond_prob_vec = cond_prob_vec,
-    cond_eff = cond_eff,
-    # single value, should work regardless of n age groups
-    act_rate_vec = 2
-  )
-)
-
-params_rate_per_group <- with(
-  static_params,
-  EpiModel::param.net(
-    inf_prob_mtf = inf_prob_mtf,
-    inf_prob_ftm = inf_prob_ftm,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
+## Set up resued parameters
+single_rate_params <- rate_per_group_params <-
+  rate_length_long_params <- rate_length_short_params <- list(
+    inf_prob_mtf = 1,
+    inf_prob_ftm = 1,
+    acute_duration = 5,
     cond_prob_vec = 0,
     cond_eff = 0,
-    # correct length
-    act_rate_vec = rep(2, ngrps)
+    sympt_prob_m = 0.4,
+    sympt_prob_f = 0.6,
+    sympt_inf_modifier = 1
   )
-)
-
-params_rate_length_long <- with(
-  static_params,
-  EpiModel::param.net(
-    inf_prob_mtf = inf_prob_mtf,
-    inf_prob_ftm = inf_prob_ftm,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
-    cond_prob_vec = 0,
-    cond_eff = 0,
-    # too long (should be length 1 or length of age groups)
-    act_rate_vec = rep(2, ngrps + 3)
-  )
-)
-params_rate_length_short <- with(
-  static_params,
-  EpiModel::param.net(
-    inf_prob_mtf = inf_prob_mtf,
-    inf_prob_ftm = inf_prob_ftm,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
-    cond_prob_vec = cond_prob_vec,
-    cond_eff = cond_eff,
-    # too short (should be length 1 or length of age groups)
-    act_rate_vec = rep(2, ngrps - 1)
-  )
-)
 
 ## Initial Conditions
-inits <- EpiModel::init.net(i.num = 5)
+inits <- EpiModel::init.net(i.num = 50)
 
 ## Control Settings & Modules
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
+  initialize.FUN = mod_sti_initialize,
   infection.FUN = mod_infection,
   epi.by = "female",
   save.other = c("attr"),
@@ -86,6 +36,11 @@ controls <- EpiModel::control.net(
 )
 
 test_that("mod_infection works with single act_rate_vec value", {
+  single_rate_params$act_rate_vec <- 2
+  params_single_rate <- do.call(
+    EpiModel::param.net,
+    single_rate_params
+  )
   sim <- EpiModel::netsim(fit, params_single_rate, inits, controls) |>
     suppressMessages() |>
     expect_no_error()
@@ -97,6 +52,11 @@ test_that("mod_infection works with single act_rate_vec value", {
 })
 
 test_that("mod_infection works with act_rate_vec value per age group", {
+  rate_per_group_params$act_rate_vec <- rep(2, ngrps)
+  params_rate_per_group <- do.call(
+    EpiModel::param.net,
+    rate_per_group_params
+  )
   sim <- EpiModel::netsim(fit, params_rate_per_group, inits, controls) |>
     suppressMessages() |>
     expect_no_error()
@@ -108,6 +68,11 @@ test_that("mod_infection works with act_rate_vec value per age group", {
 })
 
 test_that("mod_infection errors with wrong length act_rate_vec", {
+  rate_length_long_params$act_rate_vec <- rep(2, ngrps + 3)
+  params_rate_length_long <- do.call(
+    EpiModel::param.net,
+    rate_length_long_params
+  )
   expect_error(
     suppressMessages(EpiModel::netsim(
       fit,
@@ -115,9 +80,15 @@ test_that("mod_infection errors with wrong length act_rate_vec", {
       inits,
       controls
     )),
-    regexp = "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population"
+    regexp = "act_rate_vec parameter length must be either 1 or
+      equal to the number of age groups in the population."
   )
 
+  rate_length_short_params$act_rate_vec <- rep(2, ngrps - 1)
+  params_rate_length_short <- do.call(
+    EpiModel::param.net,
+    rate_length_short_params
+  )
   expect_error(
     suppressMessages(EpiModel::netsim(
       fit,
@@ -125,7 +96,8 @@ test_that("mod_infection errors with wrong length act_rate_vec", {
       inits,
       controls
     )),
-    regexp = "act_rate_vec parameter length must be either 1 or equal to the number of age groups in the population"
+    regexp = "act_rate_vec parameter length must be either 1 or
+      equal to the number of age groups in the population."
   )
 })
 
@@ -134,39 +106,22 @@ test_that("mod_infection errors with wrong length act_rate_vec", {
 #--------------------------------------------------------------
 
 ## Parameters
-static_directional_params <- list(
-  acute_inf_modifier = 1,
-  acute_duration = 5,
+only_mtf_params <- only_ftm_params <- list(
   cond_prob_vec = 0,
   cond_eff = 0,
-  act_rate_vec = 2
+  act_rate_vec = 2,
+  sympt_prob_m = 0.4,
+  sympt_prob_f = 0.6,
+  sympt_inf_modifier = 1
 )
 
-param_only_mtf <- with(
-  static_directional_params,
-  EpiModel::param.net(
-    inf_prob_mtf = 1,
-    inf_prob_ftm = 0,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
-    cond_prob_vec = cond_prob_vec,
-    cond_eff = cond_eff,
-    act_rate_vec = act_rate_vec
-  )
-)
+only_mtf_params$inf_prob_mtf <- 1
+only_mtf_params$inf_prob_ftm <- 0
+params_only_mtf <- do.call(EpiModel::param.net, only_mtf_params)
 
-param_only_ftm <- with(
-  static_directional_params,
-  EpiModel::param.net(
-    inf_prob_mtf = 0,
-    inf_prob_ftm = 1,
-    acute_inf_modifier = acute_inf_modifier,
-    acute_duration = acute_duration,
-    cond_prob_vec = cond_prob_vec,
-    cond_eff = cond_eff,
-    act_rate_vec = act_rate_vec
-  )
-)
+only_ftm_params$inf_prob_mtf <- 0
+only_ftm_params$inf_prob_ftm <- 1
+params_only_ftm <- do.call(EpiModel::param.net, only_ftm_params)
 
 ## Initial Conditions
 inits <- EpiModel::init.net(i.num = 50)
@@ -175,6 +130,7 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
+  initialize.FUN = mod_sti_initialize,
   infection.FUN = mod_infection,
   epi.by = "female",
   save.other = c("attr"),
@@ -183,21 +139,23 @@ controls <- EpiModel::control.net(
 
 test_that("mod_infection works with directional infection probabilities", {
   # Testing MTF directionality --------------------------------------
-  sim_mtf <- EpiModel::netsim(fit, param_only_mtf, inits, controls) |>
+  sim_mtf <- EpiModel::netsim(fit, params_only_mtf, inits, controls) |>
     suppressMessages() |>
     expect_no_error()
 
-  # Convert sim to data frame for easier manipulation (only extracts epi list, not attributes)
+  # Convert sim to data frame for easier manipulation
+  # (only extracts epi list, not attributes)
   df <- as.data.frame(sim_mtf)
   # Sum of vector of new infections over time should be > 0
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
-  # Sum of vector of new infections among females should = sum of vector of all new infections
+  # Sum of vector of new infections among females should = sum
+  # of vector of all new infections
   sum_female_inc_vec <- sum(df$si.flow.female1, na.rm = TRUE)
   expect_equal(sum_female_inc_vec, sum_inc_vec)
 
   # Testing FTM directionality --------------------------------------
-  sim_ftm <- EpiModel::netsim(fit, param_only_ftm, inits, controls) |>
+  sim_ftm <- EpiModel::netsim(fit, params_only_ftm, inits, controls) |>
     suppressMessages() |>
     expect_no_error()
 
@@ -206,7 +164,8 @@ test_that("mod_infection works with directional infection probabilities", {
   # Sum of vector of new infections over time should be > 0
   sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
-  # Sum of vector of new infections among males should = sum of vector of all new infections
+  # Sum of vector of new infections among males should = sum
+  # of vector of all new infections
   sum_male_inc_vec <- sum(df$si.flow.female0, na.rm = TRUE)
   expect_equal(sum_male_inc_vec, sum_inc_vec)
 })
@@ -215,13 +174,16 @@ test_that("mod_infection works with directional infection probabilities", {
 # TESTING CONDOM USE AND EFFECTIVENESS IN mod_infection --------------
 #--------------------------------------------------------------
 ## Static parameters
-static_params_cond <- list(
-  inf_prob_mtf = 1,
-  inf_prob_ftm = 1,
-  act_rate_vec = 2,
-  acute_inf_modifier = 1,
-  acute_duration = 5
-)
+condom_no_trans_params <- condom_no_eff_params <-
+  condom_no_cond_params <- condom_invalid_params <-
+    condom_invalid_length_params <- list(
+      inf_prob_mtf = 1,
+      inf_prob_ftm = 1,
+      act_rate_vec = 2,
+      sympt_prob_m = 0.4,
+      sympt_prob_f = 0.6,
+      sympt_inf_modifier = 1
+    )
 
 ## Initial Conditions
 inits <- EpiModel::init.net(i.num = 50)
@@ -230,6 +192,7 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
+  initialize.FUN = mod_sti_initialize,
   infection.FUN = mod_infection,
   epi.by = "female",
   save.other = c("attr"),
@@ -237,17 +200,11 @@ controls <- EpiModel::control.net(
 )
 
 test_that("when condom use & effectiveness = 1, we get no transmissions", {
-  params_condom_no_trans <- with(
-    static_params_cond,
-    EpiModel::param.net(
-      cond_prob_vec = 1,
-      cond_eff = 1,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      acute_inf_modifier = acute_inf_modifier,
-      acute_duration = acute_duration,
-      act_rate_vec = act_rate_vec
-    )
+  condom_no_trans_params$cond_prob_vec <- 1
+  condom_no_trans_params$cond_eff <- 1
+  params_condom_no_trans <- do.call(
+    EpiModel::param.net,
+    condom_no_trans_params
   )
 
   sim <- EpiModel::netsim(fit, params_condom_no_trans, inits, controls) |>
@@ -260,17 +217,11 @@ test_that("when condom use & effectiveness = 1, we get no transmissions", {
 })
 
 test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
-  params_condom_no_eff <- with(
-    static_params_cond,
-    EpiModel::param.net(
-      cond_prob_vec = 1,
-      cond_eff = 0,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      acute_inf_modifier = acute_inf_modifier,
-      acute_duration = acute_duration,
-      act_rate_vec = act_rate_vec
-    )
+  condom_no_eff_params$cond_prob_vec <- 1
+  condom_no_eff_params$cond_eff <- 0
+  params_condom_no_eff <- do.call(
+    EpiModel::param.net,
+    condom_no_eff_params
   )
 
   sim <- EpiModel::netsim(fit, params_condom_no_eff, inits, controls) |>
@@ -283,17 +234,11 @@ test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
 })
 
 test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
-  params_condom_no_cond <- with(
-    static_params_cond,
-    EpiModel::param.net(
-      cond_prob_vec = 0,
-      cond_eff = 1,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      acute_inf_modifier = acute_inf_modifier,
-      acute_duration = acute_duration,
-      act_rate_vec = act_rate_vec
-    )
+  condom_no_cond_params$cond_prob_vec <- 0
+  condom_no_cond_params$cond_eff <- 1
+  params_condom_no_cond <- do.call(
+    EpiModel::param.net,
+    condom_no_cond_params
   )
 
   sim <- EpiModel::netsim(fit, params_condom_no_cond, inits, controls) |>
@@ -306,17 +251,11 @@ test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
 })
 
 test_that("invalid parameter values throw errors", {
-  params_condom_invalid <- with(
-    static_params_cond,
-    EpiModel::param.net(
-      cond_prob_vec = 1.5,
-      cond_eff = -0.2,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      acute_inf_modifier = acute_inf_modifier,
-      acute_duration = acute_duration,
-      act_rate_vec = act_rate_vec
-    )
+  condom_invalid_params$cond_prob_vec <- 1.5
+  condom_invalid_params$cond_eff <- -0.2
+  params_condom_invalid <- do.call(
+    EpiModel::param.net,
+    condom_invalid_params
   )
 
   expect_error(
@@ -329,17 +268,11 @@ test_that("invalid parameter values throw errors", {
     regexp = "All infection-related probabilities must be >=0 and <=1"
   )
 
-  params_condom_invalid_length <- with(
-    static_params_cond,
-    EpiModel::param.net(
-      cond_prob_vec = c(1, 1, 1),
-      cond_eff = 0,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      acute_inf_modifier = acute_inf_modifier,
-      acute_duration = acute_duration,
-      act_rate_vec = act_rate_vec
-    )
+  condom_invalid_length_params$cond_prob_vec <- c(1, 1, 1)
+  condom_invalid_length_params$cond_eff <- 0
+  params_condom_invalid_length <- do.call(
+    EpiModel::param.net,
+    condom_invalid_length_params
   )
 
   expect_error(
@@ -349,21 +282,24 @@ test_that("invalid parameter values throw errors", {
       inits,
       controls
     )),
-    regexp = "cond_prob_vec parameter length must be either 1 or equal to the number of networks in the simulation."
+    regexp = "cond_prob_vec parameter length must be either 1 or
+      equal to the number of networks in the simulation."
   )
 })
 
 #--------------------------------------------------------------
-# TESTING ACUTE DURATION INF MODIFER IN mod_infection --------------
+# TESTING SYMPTOMATIC INFECTION MODIFIER IN mod_infection --------------
 #--------------------------------------------------------------
 
 ## Static parameters
-static_params_acute <- list(
+sympt_mod_invalid_params <- sympt_mod_invalid_params2 <- list(
   inf_prob_mtf = 1,
   inf_prob_ftm = 1,
   act_rate_vec = 2,
   cond_prob_vec = 0,
-  cond_eff = 0
+  cond_eff = 0,
+  sympt_prob_m = 0.4,
+  sympt_prob_f = 0.6
 )
 
 ## Initial Conditions
@@ -373,59 +309,46 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
+  initialize.FUN = mod_sti_initialize,
   infection.FUN = mod_infection,
   epi.by = "female",
   save.other = c("attr"),
   verbose = FALSE
 )
 
-test_that("acute infection modifier throws error when too large", {
-  params_acute_mod_invalid <- with(
-    static_params_acute,
-    EpiModel::param.net(
-      acute_inf_modifier = 5,
-      acute_duration = 5,
-      cond_prob_vec = cond_prob_vec,
-      cond_eff = cond_eff,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      act_rate_vec = act_rate_vec
-    )
+test_that("symptomatic infection modifier throws error when too large", {
+  sympt_mod_invalid_params$sympt_inf_modifier <- 5
+  params_sympt_mod_invalid <- do.call(
+    EpiModel::param.net,
+    sympt_mod_invalid_params
   )
 
   expect_error(
     sim <- suppressMessages(EpiModel::netsim(
       fit,
-      params_acute_mod_invalid,
+      params_sympt_mod_invalid,
       inits,
       controls
     )),
-    regexp = "Infection probabilities during acute infection stage exceed 1.
-      Adjust inf_prob_mtf, inf_prob_ftm, or acute_inf_modifier parameters."
+    regexp = "Infection probabilities during symptomatic infection will exceed 1.
+    Adjust inf_prob_mtf, inf_prob_ftm, or sympt_inf_modifier parameters."
   )
 })
 
-test_that("acute infection modifier throws error when < 1", {
-  params_acute_mod_invalid2 <- with(
-    static_params_acute,
-    EpiModel::param.net(
-      acute_inf_modifier = 0.5,
-      acute_duration = 5,
-      cond_prob_vec = cond_prob_vec,
-      cond_eff = cond_eff,
-      inf_prob_mtf = inf_prob_mtf,
-      inf_prob_ftm = inf_prob_ftm,
-      act_rate_vec = act_rate_vec
-    )
+test_that("symptomatic infection modifier throws error when < 1", {
+  sympt_mod_invalid_params2$sympt_inf_modifier <- 0.5
+  params_sympt_mod_invalid2 <- do.call(
+    EpiModel::param.net,
+    sympt_mod_invalid_params2
   )
 
   expect_error(
     sim <- suppressMessages(EpiModel::netsim(
       fit,
-      params_acute_mod_invalid2,
+      params_sympt_mod_invalid2,
       inits,
       controls
     )),
-    regexp = "acute_inf_modifier parameter must be >= 1."
+    regexp = "sympt_inf_modifier parameter must be >= 1."
   )
 })

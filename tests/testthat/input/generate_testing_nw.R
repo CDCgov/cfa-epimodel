@@ -1,5 +1,5 @@
 # generate nw and fit object for testing
-# current required attributes: age, age_group, olderpartner, female, race
+# current required attributes: age, age_group, female, race
 # number of edges and duration are arbitrary
 size <- 100
 age_min <- 15
@@ -17,7 +17,6 @@ age_group_vec <- dplyr::case_when(
 nw <- network::network.initialize(size, directed = FALSE)
 nw <- network::set.vertex.attribute(nw, "age", age_vec)
 nw <- network::set.vertex.attribute(nw, "age_group", age_group_vec)
-nw <- network::set.vertex.attribute(nw, "olderpartner", rbinom(size, 1, 0.2))
 nw <- network::set.vertex.attribute(nw, "female", rbinom(size, 1, 0.5))
 nw <- network::set.vertex.attribute(
   nw,
