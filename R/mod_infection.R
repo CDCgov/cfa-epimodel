@@ -54,7 +54,10 @@ mod_infection <- function(dat, at) {
     stop("sympt_inf_modifier parameter must be >= 1.", call. = FALSE)
   }
 
-  if ((inf_prob_mtf >= 1 || inf_prob_ftm >= 1) && sympt_inf_modifier > 1) {
+  if (
+    (inf_prob_mtf * sympt_inf_modifier > 1 ||
+      inf_prob_ftm * sympt_inf_modifier > 1)
+  ) {
     stop(
       "Infection probabilities during symptomatic infection will exceed 1.
     Adjust inf_prob_mtf, inf_prob_ftm, or sympt_inf_modifier parameters.",

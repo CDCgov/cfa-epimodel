@@ -8,7 +8,7 @@ ag <- fit$newnetwork %v% "age_group"
 ngrps <- length(unique(ag))
 
 ## 1 time step = 1 year, to speed aging processes
-## Set up resued parameters
+## Set up reused parameters
 single_rate_params <- rate_per_group_params <-
   rate_length_long_params <- rate_length_short_params <- list(
     inf_prob_mtf = 1,

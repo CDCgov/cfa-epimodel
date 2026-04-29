@@ -350,7 +350,7 @@ summarize_final_degrees <- function(input, network) {
 #' comparing simulated degrees to target degrees.
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbar facet_wrap
 #' @importFrom dplyr filter mutate
-#' @importFrom rlang .datamake
+#' @importFrom rlang .data
 #' @export
 plot_final_degrees <- function(input, network, yaml_params_loc) {
   if (!network %in% c("main", "casual")) {

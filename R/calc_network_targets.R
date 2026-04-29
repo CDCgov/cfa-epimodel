@@ -162,8 +162,8 @@ generate_init_network <- function(
 #' @param inst_correct default = FALSE, if TRUE, adjust year-long
 #' cumulative reporting of one-time partnerships to daily or weekly counts
 #' @param time_unit default = "weeks",
-#' the desired time unit for inst reporting conversion
-#' @param level additional statification for nodedov target calculation function
+#' the desired final time unit for inst reporting conversion
+#' @param level additional statification for nodecov target calculation function
 #' @param attr_squared for nodecov target calculation,
 #' should squared version of attribute be calculated? (usually, age)
 #' @importFrom rlang .data
@@ -304,7 +304,7 @@ get_nw_attr_vecs <- function(nw) {
     }
   }
 
-  return(attrs) # nolint
+  return(attrs)
 }
 
 #' @title Make Empirical Mixing Matrix Symmetrical
@@ -331,7 +331,7 @@ matrix_symmetrical <- function(mat) {
     }
   }
 
-  return(newmat) # nolint
+  return(newmat)
 }
 
 #' @title Target correction for instantaneous network
@@ -366,7 +366,7 @@ inst_correction <- function(targets, time_unit = NULL) {
     }
   }
 
-  return(targets / unit_correction) # nolint
+  return(targets / unit_correction)
 }
 
 #' @title Target Stats Calculation Helpers
@@ -561,7 +561,6 @@ check_targets <- function(edges, final_targets, count_type, threshold = 0.01) {
 
 #' @rdname targets
 #' @export
-# nolint start
 check_conditions <- function(
   nw,
   params,
@@ -601,4 +600,3 @@ check_conditions <- function(
     )
   }
 }
-# nolint end

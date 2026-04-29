@@ -1,4 +1,4 @@
-test_that("correction for instantanous rel data collection modifies target correctly", {
+test_that("correction for instantaneous rel data collection modifies target correctly", {
   #nolint
   # set targets for evaluation
   cuml_rels <- 500
