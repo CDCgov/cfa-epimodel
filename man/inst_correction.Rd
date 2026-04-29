@@ -7,15 +7,19 @@
 inst_correction(targets, time_unit = NULL)
 }
 \arguments{
-\item{targets}{a numeric vector of the ergm target statistics estimated from cumulative year data}
+\item{targets}{a numeric vector of the ergm target statistics
+estimated from cumulative year data}
 
-\item{time_unit}{either "days" or "weeks", the unit of time represented by each discrete step in simulation model}
+\item{time_unit}{either "days" or "weeks", the unit of time
+represented by each discrete step in simulation model}
 }
 \value{
 A numeric vector
 }
 \description{
-In NSFG (and other surveys), information about the frequency of one-time (instantaneous)
-partnerships are reported as the cumulative number over the last 12 months. This function converts the
+In NSFG (and other surveys), information about
+the frequency of one-time (instantaneous)
+partnerships are reported as the cumulative number over the
+last 12 months. This function converts the
 empirical yearly target to per-week or per-day counts.
 }

@@ -19,7 +19,7 @@ help:
 	@echo "  docs              : Runs devtools::document() within the package."
 	@echo "  check             : Runs R CMD check on the package."
 	@echo "  bic               : Builds, installs, and cleans the package."
-	@echo "  format            : Runs jarl and air to check R code formating."
+	@echo "  format            : Runs jarl and air to check R code formatting."
 	@echo ""
 
 build: clean
@@ -38,7 +38,7 @@ check:
 	R CMD check . --no-manual
 
 format:
-	jarl check . --fix --allow-dirty
+	jarl check . --allow-dirty
 	air format .
 
 bic: build install clean

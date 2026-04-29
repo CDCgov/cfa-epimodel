@@ -11,11 +11,12 @@ params <- EpiModel::param.net(
   units_per_year = 1,
   exit_age = 50,
   entry_age = 15,
-  age_group_width = 5,
   arrivalType = "departures",
   entry_female_prob = 0.5,
   entry_race_probs = c(0.6, 0.4),
-  entry_race_names = c("A", "B")
+  entry_race_names = c("A", "B"),
+  sympt_prob_m = 0.4,
+  sympt_prob_f = 0.6
 )
 
 ## Initial Conditions
@@ -32,6 +33,7 @@ controls_aging <- EpiModel::control.net(
 controls_all_vitals <- EpiModel::control.net(
   nsims = 1,
   nsteps = 100, # longer time to allow for aging out and new arrivals
+  initialize.FUN = mod_sti_initialize,
   arrivals.FUN = mod_arrivals,
   departures.FUN = mod_departures,
   aging.FUN = mod_aging,
@@ -40,7 +42,7 @@ controls_all_vitals <- EpiModel::control.net(
 )
 
 
-test_that("mod_aging updates age and age_group correctly, arrivalType = departures returns static pop size", {
+test_that("mod_aging updates age and age_group correctly", {
   # Run simulation with only aging module
   sim <- suppressMessages(EpiModel::netsim(fit, params, inits, controls_aging))
 
@@ -55,13 +57,13 @@ test_that("mod_aging updates age and age_group correctly, arrivalType = departur
     "age" +
     ((1 / sim$param$units_per_year) * (sim$control$nsteps - 1))
   age_group_compare <- dplyr::case_when(
-    sim_age < 20 ~ 1,
-    sim_age >= 20 & sim_age < 25 ~ 2,
-    sim_age >= 25 & sim_age < 30 ~ 3,
-    sim_age >= 30 & sim_age < 35 ~ 4,
-    sim_age >= 35 & sim_age < 40 ~ 5,
-    sim_age >= 40 & sim_age < 45 ~ 6,
-    sim_age >= 45 ~ 7
+    age_compare >= 45 ~ 7,
+    age_compare < 45 & age_compare >= 40 ~ 6,
+    age_compare < 40 & age_compare >= 35 ~ 5,
+    age_compare < 35 & age_compare >= 30 ~ 4,
+    age_compare < 30 & age_compare >= 25 ~ 3,
+    age_compare < 25 & age_compare >= 19 ~ 2,
+    age_compare < 19 ~ 1
   )
 
   expect_equal(sim_age_group, age_group_compare)
@@ -83,11 +85,13 @@ test_that("vital dynamics and arrival attr assignment working", {
   expect_gt(total_arrivals, 0)
   expect_gt(total_departures, 0)
 
-  # Test that total arrivals equal total departures when arrivalType = "departures"
-  # and pop size remains the same over time
+  ## Test that total arrivals equal total departures when
+  ## arrivalType is "departures"
+  ## and pop size remains the same over time
   expect_equal(total_arrivals, total_departures)
   ## "num" is the total active population size at each time step
-  ## regardless of whether or not departed nodes are removed from tracking & networks
+  ## regardless of whether or not departed nodes are removed
+  ## from tracking & networks
   pop_sizes <- sim$epi$num$sim1
   expect_true(all(pop_sizes == pop_sizes[1]))
 
@@ -98,14 +102,16 @@ test_that("vital dynamics and arrival attr assignment working", {
 
   ## Test that ages of arrivals are within expected range
   arrivals_duration <- sim$control$nsteps - (which(sim$epi$a.flow$sim1 > 0)[1])
-  expected_age_range <- sim$param$entry_age:(sim$param$entry_age +
-    (arrivals_duration / sim$param$units_per_year))
+  expected_age_range <-
+    sim$param$entry_age:(sim$param$entry_age +
+      (arrivals_duration / sim$param$units_per_year))
 
   arrivals_ages <- sim$attr$sim1$age[arrivals_indices]
 
   expect_true(all(arrivals_ages %in% expected_age_range))
 
-  ## test that race apportionment for new arrivals matches specified probabilities
+  ## test that race apportionment for new arrivals matches
+  ## specified probabilities
   n_arrivals <- length(arrivals_indices)
   arrivals_races <- sim$attr$sim1$race[arrivals_indices]
   arrivals_races_props <- table(arrivals_races) / n_arrivals

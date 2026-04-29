@@ -4,20 +4,30 @@
 \alias{get_edges_history}
 \title{Get Edges History from Simulation}
 \usage{
-get_edges_history(sim, nets = c("main", "casual"))
+get_edges_history(
+  sim,
+  edge_prefix = "edges_net_",
+  net_names = c("main", "casual", "inst")
+)
 }
 \arguments{
 \item{sim}{A simulation object of class \code{EpiModel::netsim}.}
 
-\item{nets}{Character vector specifying which networks to extract targets for. Default is c("main", "casual").}
+\item{edge_prefix}{A character string specifying the prefix used for edge
+history in the simulation object. Default is "edges_net_".}
+
+\item{net_names}{A character vector specifying the names of the networks
+corresponding to the edge history in the simulation object. Default is
+c("main", "casual", "inst").}
 }
 \value{
-A data frame with time, simulation identifier, edges for main and casual networks,
-the difference from target edges, and the percentage difference from target edges.
+A df with time, simulation id, edges for all networks,
+the difference from target edges, and the percentage diff from target edges.
 }
 \description{
-Extracts edges history as the number of edges per time step from a simulation object,
-calculating the difference between the simulated edges and the target edges for both main and casual networks.
-NOTE: Assumes edge history is tracked in the simulation object in the "epi" list, not via setting the control
-parameter 'nwstats' TRUE.
+Extracts edges history as the number of edges per time step from
+a simulation object, calculating the difference between the simulated edges
+and the target edges for all networks.
+Assumes edge history is tracked in the simulation object via the "epi" list,
+not via setting the control parameter 'nwstats' TRUE.
 }

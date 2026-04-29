@@ -1,4 +1,5 @@
-test_that("correction for instantanous rel data collection modifies target correctly", {
+test_that("correction for instantaneous rel data collection modifies target correctly", {
+  #nolint
   # set targets for evaluation
   cuml_rels <- 500
   per_week_target <- cuml_rels / 52
@@ -14,7 +15,8 @@ test_that("correction for instantanous rel data collection modifies target corre
   expect_equal(inst_correction(cuml_rels_vec, "weeks"), per_week_target_vec)
   expect_equal(inst_correction(cuml_rels_vec, "days"), per_day_target_vec)
 
-  # expect warnings with unexpected time_unit inputs and returns unmodified target
+  # expect warnings with unexpected time_unit inputs
+  ## and returns unmodified target
   expect_warning(t1 <- inst_correction(cuml_rels))
   expect_warning(t2 <- inst_correction(cuml_rels, time_unit = "seconds"))
   expect_warning(t3 <- inst_correction(cuml_rels, time_unit = NA))
