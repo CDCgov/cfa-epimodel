@@ -37,13 +37,13 @@ Currently can only be in the form:
 \item{inst_correct}{default = FALSE, if TRUE, adjust year-long
 cumulative reporting of one-time partnerships to daily or weekly counts}
 
-\item{level}{additional statification for nodedov target calculation function}
+\item{level}{additional statification for nodecov target calculation function}
 
 \item{attr_squared}{for nodecov target calculation,
 should squared version of attribute be calculated? (usually, age)}
 
 \item{time_unit}{default = "weeks",
-the desired time unit for inst reporting conversion}
+the desired final time unit for inst reporting conversion}
 }
 \description{
 Calculates network targets given, at minimum,

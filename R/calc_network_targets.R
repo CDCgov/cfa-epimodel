@@ -467,44 +467,13 @@ calc_nodecov_age <- function(
   rel,
   attr_name,
   edges,
-  level = NULL,
-  nf_counts,
   attr_squared
 ) {
-  # first check if cutoff exists
-  cutoff <- params[[rel]][["nodecov"]][["cutoff"]]
-
-  if (is.null(cutoff)) {
-    # get mean of value for attr(i) + attr(j) from data
-    if (attr_squared) {
-      attr_name <- paste0(attr_name, "sq")
-    }
-    attr_mean <- params[[rel]][["nodecov"]][[attr_name]]
+  # get mean of value for attr(i) + attr(j) from data
+  if (attr_squared) {
+    attr_name <- paste0(attr_name, "sq")
   }
-
-  if (!is.null(cutoff)) {
-    # Need to re-calculate edges for that cutoff group
-    nf_counts <- calc_nodefactor(
-      params,
-      grouping_vars = "age",
-      nf_counts
-    )
-    if (level == "low") {
-      age_range <- params$pop$age$min:(cutoff - 1)
-    }
-    if (level == "high") {
-      age_range <- cutoff:params$pop$age$max
-    }
-    counts <- nf_counts[which(names(nf_counts) %in% age_range)]
-    edges <- sum(counts) / 2
-
-    # if cutoff exists, need level to clarify nodecov target
-    # get mean of value for attr(i) + attr(j) from data
-    if (attr_squared) {
-      attr_name <- paste0(attr_name, "sq")
-    }
-    attr_mean <- params[[rel]][["nodecov"]][[level]][[attr_name]]
-  }
+  attr_mean <- params[[rel]][["nodecov"]][[attr_name]]
 
   # nodecov target is the attr_mean multiplied by the number of edges
   attr_mean * edges

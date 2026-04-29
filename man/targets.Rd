@@ -25,15 +25,7 @@ calc_concurrent(params, rel, num)
 
 calc_cross_network(params, rel, edges)
 
-calc_nodecov_age(
-  params,
-  rel,
-  attr_name,
-  edges,
-  level = NULL,
-  nf_counts,
-  attr_squared
-)
+calc_nodecov_age(params, rel, attr_name, edges, attr_squared)
 
 check_targets(edges, final_targets, count_type, threshold = 0.01)
 
@@ -63,10 +55,6 @@ Currently can only be in the form:
 
 \item{num}{the number of nodes in the network (population size)}
 
-\item{level}{additional statification for nodedov target calculation function}
-
-\item{nf_counts}{output from calc_joint_nodefactor()}
-
 \item{attr_squared}{for nodecov target calculation,
 should squared version of attribute be calculated? (usually, age)}
 
@@ -79,6 +67,8 @@ calulated target is allowed within (+/- threshold)}
 
 \item{nw}{the network object outputted from "generate_init_network"
 (usually already in environment during workflow)}
+
+\item{nf_counts}{output from calc_joint_nodefactor()}
 }
 \description{
 Small helper functions used as part of calc_targets()
