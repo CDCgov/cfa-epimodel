@@ -151,8 +151,11 @@ mod_arrivals <- function(dat, at) {
     dat <- append_attr(dat, "age_group", 1, nArrivals)
     dat <- append_attr(dat, "race", arrival_race, nArrivals)
     dat <- append_attr(dat, "female", arrival_sex, nArrivals)
+    dat <- append_attr(dat, "amr_m", 0, nArrivals) # assume new arrivals are macrolide susceptible
+    dat <- append_attr(dat, "amr_q", 0, nArrivals) # assume new arrivals are quinolone susceptible
+    dat <- append_attr(dat, "curr_tx", NA, nArrivals)
+    dat <- append_attr(dat, "tx_end_day", NA, nArrivals)
   }
-
   ## Summary statistics
   dat <- set_epi(dat, "a.flow", at, nArrivals)
 

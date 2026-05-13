@@ -14,10 +14,12 @@ mod_mgen_clinical <- function(dat, at) {
   female <- get_attr(dat, "female") # biological sex, where 1 = female and 0 = male
   status <- get_attr(dat, "status") # infection status (s = susceptible, i = infected)
   sympt <- get_attr(dat, "sympt") # symptom status (1 = symptomatic, 0 = asymptomatic)
-  amr_m <- get_attr(dat, "amr_m") # macrolide resistance status
-  amr_q <- get_attr(dat, "amr_q") # quinolone resistance status
+  amr_m <- get_attr(dat, "amr_m") # macrolide resistance status, where 0 = susceptible and 1 = resistant
+  amr_q <- get_attr(dat, "amr_q") # quinolone resistance status, where 0 = susceptible and 1 = resistant
   curr_tx <- get_attr(dat, "curr_tx") # current treatment status (NA = no treatment, 1 = doxycycline, 2 = moxifloxacin)
-  tx_day_eval <- get_attr(dat, "tx_day_eval") # day of treatment evaluation (NA if not yet evaluated)
+  tx_end_day <- get_attr(dat, "tx_end_day") # day of treatment evaluation (NA if not treated)
+
+  # Get parameters
   rec_state <- get_param(dat, "rec_state") # recovery state (e.g., "s" for susceptible)
 
   # Get indices of infected individuals by symptom status and sex
@@ -33,8 +35,8 @@ mod_mgen_clinical <- function(dat, at) {
   #ids_tested_m <- NULL # indices of infected who get tested, male
   #ids_tested_f <- NULL # indices of infected who get tested, female
 
-  ids_tx_doxi_m <- NULL # indices of infected who get treated with doxycycline, male
-  ids_tx_doxi_f <- NULL # indices of infected who get treated with doxycycline, female
+  ids_tx_doxy_m <- NULL # indices of infected who get treated with doxycycline, male
+  ids_tx_doxy_f <- NULL # indices of infected who get treated with doxycycline, female
   ids_tx_moxi_m <- NULL # indices of infected who get treated with moxifloxacin, male
   ids_tx_moxi_f <- NULL # indices of infected who get treated with moxifloxacin, female
 
@@ -59,41 +61,53 @@ mod_mgen_clinical <- function(dat, at) {
     p_doxy_failure <- get_param(dat, "p_doxy_failure")
     p_moxi_failure <- get_param(dat, "p_moxi_failure")
 
-    get_successful_ids_binom <- function(elig_ids, eval_prob) {
-      l_elig_ids <- length(elig_ids)
-      l_eval_prob <- length(eval_prob)
-      if (length(elig_ids) > 0) {
-        if (l_eval_prob == 1 | l_eval_prob == l_elig_ids) {
-          elig_ids[rbinom(length(elig_ids), 1, eval_prob) == 1]
-        } else {
-          stop(
-            "Length of eval_prob must be either 1 or equal to the number of eligible IDs."
-          )
-        }
-      } else {
-        NULL
-      }
-    }
-
     # Get ids of symptomatic infected individuals eligible for first-line treatment (doxycycline)
-    ids_tx_doxi_m <- get_successful_ids_binom(ids_sympt_m, p_seek_care_m)
-    ids_tx_doxi_f <- get_successful_ids_binom(ids_sympt_f, p_seek_care_f)
-    all_tx_doxi_ids <- c(ids_tx_doxi_m, ids_tx_doxi_f)
+    ids_tx_doxy_m <- get_successful_ids_binom(ids_sympt_m, p_seek_care_m)
+    ids_tx_doxy_f <- get_successful_ids_binom(ids_sympt_f, p_seek_care_f)
+    all_tx_doxy_ids <- c(ids_tx_doxy_m, ids_tx_doxy_f)
 
     # Update treatment status and day of treatment evaluation for those treated with doxycycline
-    if (length(all_tx_doxi_ids) > 0) {
-      curr_tx[all_tx_doxi_ids] <- 1 # 1 = doxycycline
-      tx_day_eval[all_tx_doxi_ids] <- at + duration_doxy_tx
+    if (length(all_tx_doxy_ids) > 0) {
+      curr_tx[all_tx_doxy_ids] <- 1 # 1 = doxycycline
+      tx_end_day[all_tx_doxy_ids] <- at + duration_doxy_tx
+    }
+
+    # Get ids of those treated with doxycycline who fail treatment at eval day
+    ids_doxy_eval <- which(
+      active == 1 &
+        sympt == 1 &
+        status == "i" &
+        curr_tx == 1 &
+        tx_end_day == at
+    )
+    ids_doxy_failure <- get_successful_ids_binom(ids_doxy_eval, p_doxy_failure)
+    ids_doxy_success <- setdiff(ids_doxy_eval, ids_doxy_failure)
+
+    if (length(ids_doxy_success) > 0) {
+      # Clear infection for those with successful doxycycline treatment
+      status[ids_doxy_success] <- rec_state
+      curr_tx[ids_doxy_success] <- NA
+      tx_end_day[ids_doxy_success] <- NA
+    }
+
+    if (length(ids_doxy_failure) > 0) {
+      # Get ids of those with doxycycline failure who get NAAT test
+      ids_naat_elig_m <- which(
+        active == 1 &
+          sympt == 1 &
+          status == "i" &
+          curr_tx == 1 &
+          tx_end_day == at
+      )
     }
   }
-
   # Update Epi Trackers
-  dat <- set_epi(dat, "n_tx_doxi_m", length(ids_tx_doxi_m))
-  dat <- set_epi(dat, "n_tx_doxi_f", length(ids_tx_doxi_f))
+  dat <- set_epi(dat, "n_tx_doxy_m", at, length(ids_tx_doxy_m))
+  dat <- set_epi(dat, "n_tx_doxy_f", at, length(ids_tx_doxy_f))
 
   # Update Attributes
   dat <- set_attr(dat, "curr_tx", curr_tx)
-  dat <- set_attr(dat, "tx_day_eval", tx_day_eval)
+  dat <- set_attr(dat, "tx_end_day", tx_end_day)
 
   # Return dat object
   dat
