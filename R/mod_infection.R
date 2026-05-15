@@ -195,8 +195,6 @@ mod_infection <- function(dat, at) {
         )
       }
       ## Calculate new infections among each sex explicitly by code:
-      ## si.flow.female0 corresponds to new infs among female == 0
-      ## si.flow.female1 corresponds to new infs among female == 1
       n_inf <- sum(female[ids_new_inf] == 0, na.rm = TRUE)
       n_inf_g2 <- sum(female[ids_new_inf] == 1, na.rm = TRUE)
       tot_inf <- n_inf + n_inf_g2
@@ -211,9 +209,9 @@ mod_infection <- function(dat, at) {
   }
 
   ## Save incidence vector
-  dat <- set_epi(dat, "si.flow", at, tot_inf)
-  dat <- set_epi(dat, "si.flow.female0", at, n_inf)
-  dat <- set_epi(dat, "si.flow.female1", at, n_inf_g2)
+  dat <- set_epi(dat, "si_flow", at, tot_inf)
+  dat <- set_epi(dat, "si_flow_m", at, n_inf)
+  dat <- set_epi(dat, "si_flow_f", at, n_inf_g2)
 
   # Return
   dat

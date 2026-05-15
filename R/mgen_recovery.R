@@ -54,10 +54,10 @@ mod_mgen_recovery <- function(dat, at) {
   dat <- set_attr(dat, "inf_time", inf_time)
 
   # Update epi
-  flow_name <- paste0("i", rec_state, ".flow")
+  flow_name <- paste0("i", rec_state, "_flow")
   dat <- set_epi(dat, flow_name, at, n_recov)
-  dat <- set_epi(dat, paste0(flow_name, ".female0"), at, n_recov_m)
-  dat <- set_epi(dat, paste0(flow_name, ".female1"), at, n_recov_f)
+  dat <- set_epi(dat, paste0(flow_name, "_m"), at, n_recov_m)
+  dat <- set_epi(dat, paste0(flow_name, "_f"), at, n_recov_f)
 
   # Return dat
   dat
