@@ -142,7 +142,10 @@ init_mgen_status <- function(dat) {
   dat <- set_attr(dat, "amr_m", rep(0, num)) # initialize macrolide resistance status attribute (0 = susceptible, 1 = resistant)
 
   # Optional, save dat object for testing
-  saveout <- get_control(dat, "save_dat")
+  saveout <- get_control(dat, "save_dat", override.null.error = TRUE)
+  if (is.null(saveout)) {
+    saveout <- FALSE
+  }
   if (saveout) {
     folder_loc <- get_control(dat, 'save_dat_folder')
     saveRDS(

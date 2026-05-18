@@ -53,10 +53,10 @@ mod_mgen_clinical <- function(dat, at) {
     at,
     override.null.error = TRUE
   )
-  if (is.NULL(n_recovered_m)) {
+  if (is.null(n_recovered_m)) {
     n_recovered_m <- 0
   }
-  if (is.NULL(n_recovered_f)) {
+  if (is.null(n_recovered_f)) {
     n_recovered_f <- 0
   }
 
@@ -89,7 +89,7 @@ mod_mgen_clinical <- function(dat, at) {
         female == 0 &
         status == "i" &
         sympt == 1 &
-        curr_tx == 0 &
+        is.na(curr_tx) &
         is.na(tx_end_day)
     )
     ids_doxy_elig_f <- which(
@@ -97,7 +97,7 @@ mod_mgen_clinical <- function(dat, at) {
         female == 1 &
         status == "i" &
         sympt == 1 &
-        curr_tx == 0 &
+        is.na(curr_tx) &
         is.na(tx_end_day)
     )
     ## Determine which eligible individuals seek care and receive doxycycline treatment
@@ -204,6 +204,32 @@ mod_mgen_clinical <- function(dat, at) {
     ## Update quinolone AMR status for those with moxifloxacin failure
     amr_q[ids_moxi_failure] <- 1 # set to resistant
     ## WHAT DO WE DO WITH THESE FOLKS????
+  }
+
+  if (scenario == 2) {
+    # Scenario 2: Resistance-guided therapy available
+    # Symptomatic individuals seek care as in scenario 1
+    # Given course of doxycycline treatment
+    # Most infections fail to clear and may persist with or without AMR
+    # NAAT test for M.gen and macrolide resistance upon failure of doxycycline
+    # If NAAT confirms M.gen infection and macrolide susceptibility, treat with moxifloxacin
+    # If NAAT confirms M.gen infection and macrolide resistance, treat with azithromycin
+    # Infections either clear or persist w/ AMR after moxifloxacin or azithromycin treatment
+
+    # Parameters specific to this scenario
+    p_seek_care_m <- get_param(dat, "p_seek_care_m")
+    p_seek_care_f <- get_param(dat, "p_seek_care_f")
+    duration_doxy_tx <- get_param(dat, "duration_doxy_tx")
+    duration_moxi_tx <- get_param(dat, "duration_moxi_tx")
+    duration_az_tx <- get_param(dat, "duration_az_tx")
+    naat_sensitivity <- get_param(dat, "naat_sensitivity")
+    p_doxy_failure <- get_param(dat, "p_doxy_failure")
+    p_moxi_failure <- get_param(dat, "p_moxi_failure")
+    p_az_failure <- get_param(dat, "p_az_failure")
+    # Step 1: New Patients Seek Care and Get Treated with Doxycycline ---------
+    # Step 2: Sucess/Failure of Doxycycline Treatment ---------
+    # Step 3: NAAT for Doxycycline Failures & Resistance-Guided Tx---------
+    # Step 4: Sucess/Failure of Moxifloxacin or Azithromycin Treatment ---------
   }
   # Update Epi Trackers
   dat <- set_epi(dat, "n_tx_doxy_m", at, n_tx_doxy_m)
