@@ -129,9 +129,10 @@ init_mgen_status <- function(dat) {
   dat <- set_attr(dat, "inf_time", inf_time)
   dat <- set_attr(dat, "sympt", sympt)
   dat <- set_attr(dat, "rec_time", rec_time)
-  # THESE WILL NEED TO CHANGE ONCE AMR STATUS INCLUDED IN INITIALIZATION
-  dat <- set_attr(dat, "amr_q", rep(0, num)) # initialize quinolone resistance status attribute (0 = susceptible, 1 = resistant)
-  dat <- set_attr(dat, "amr_m", rep(0, num)) # initialize macrolide resistance status attribute (0 = susceptible, 1 = resistant)
+  # THESE WILL NEED TO Be assigned for infected nodes ONCE AMR STATUS INCLUDED IN INITIALIZATION
+  # initialize resistance status attributes (0 = susceptible, 1 = resistant, NA = not infected)
+  dat <- set_attr(dat, "amr_q", rep(NA, num))
+  dat <- set_attr(dat, "amr_m", rep(NA, num))
 
   # Optional, save dat object for testing
   saveout <- get_control(dat, "save_dat", override.null.error = TRUE)
