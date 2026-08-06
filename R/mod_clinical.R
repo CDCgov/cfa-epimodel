@@ -8,7 +8,15 @@
 #'
 #' @export
 
-mod_mgen_clinical <- function(dat, at) {
+mod_clinical_mgen <- function(dat, at) {
+  # If time = 2, initialize relevant epi trackers and nodal attributes
+  if (at == 2) {
+    # Nodal attributes
+    num <- sum(get_attr(dat, "active") == 1)
+    dat <- set_attr(dat, "curr_tx", rep(NA, num)) # initialize treatment status attribute
+    dat <- set_attr(dat, "tx_end_day", rep(NA, num)) # initialize treatment evaluation day
+  }
+
   # Get nodal attributes
   active <- get_attr(dat, "active")
   female <- get_attr(dat, "female") # biological sex, where 1 = female and 0 = male

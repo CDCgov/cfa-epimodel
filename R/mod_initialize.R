@@ -11,9 +11,9 @@
 #'        \code{control$start > 1}, an object of class \code{netsim}. When
 #'        multiple networks are used, the node sets (including network size
 #'        and nodal attributes) are assumed to be the same for all networks.
-#' @param param An \code{EpiModel} object of class \code{\link{param.net}}.
-#' @param init An \code{EpiModel} object of class \code{\link{init.net}}.
-#' @param control An \code{EpiModel} object of class \code{\link{control.net}}.
+#' @param param An \code{EpiModel} object of class \code{\link{EpiModel::param.net}}.
+#' @param init An \code{EpiModel} object of class \code{\link{EpiModel::init.net}}.
+#' @param control An \code{EpiModel} object of class \code{\link{EpiModel::control.net}}.
 #' @param s Simulation number, used for restarting dependent simulations.
 #' @details When re-initializing a simulation, the \code{netsim} object passed
 #'          to \code{initialize.net} must contain the elements \code{param},
@@ -21,14 +21,9 @@
 #'
 #' @return A \code{netsim_dat} class main data object.
 #'
-#' @importFrom EpiModel get_attr set_attr get_epi set_epi
-#' get_param append_core_attr append_attr
-#' get_edgelist init_status.net create_dat_object
-#' init_nets sim_nets_t1 summary_nets
-#' padded_vector get_control get_attr_prop set_param
 #' @export
 
-mod_sti_initialize <- function(x, param, init, control, s) {
+mod_initialize_mgen <- function(x, param, init, control, s) {
   if (control$start == 1) {
     dat <- create_dat_object(param, init, control)
     dat <- init_nets(dat, x)
@@ -91,13 +86,12 @@ mod_sti_initialize <- function(x, param, init, control, s) {
 
 #' @title Initialize Infection Status
 #' @description Initialize infection status and related attributes for STI
-#' transmission models. This function is called within \code{mod_sti_initialize}
+#' transmission models. This function is called within \code{mod_initialize_mgen}
 #' to set up the initial infection status of the population based on the number
 #' of initial infections specified in the \code{init} object.
-#' @inheritParams mod_sti_initialize
+#' @inheritParams mod_initialize_mgen
 #' @return A modified \code{dat} object with initialized infections
-#' @rdname mod_sti_initialize
-#' @importFrom EpiModel get_init
+#' @rdname mod_initialize_mgen
 #' @export
 init_mgen_status <- function(dat) {
   num <- sum(get_attr(dat, "active") == 1)
@@ -135,8 +129,6 @@ init_mgen_status <- function(dat) {
   dat <- set_attr(dat, "inf_time", inf_time)
   dat <- set_attr(dat, "sympt", sympt)
   dat <- set_attr(dat, "rec_time", rec_time)
-  dat <- set_attr(dat, "curr_tx", rep(NA, num)) # initialize treatment status attribute
-  dat <- set_attr(dat, "tx_end_day", rep(NA, num)) # initialize treatment evaluation day
   # THESE WILL NEED TO CHANGE ONCE AMR STATUS INCLUDED IN INITIALIZATION
   dat <- set_attr(dat, "amr_q", rep(0, num)) # initialize quinolone resistance status attribute (0 = susceptible, 1 = resistant)
   dat <- set_attr(dat, "amr_m", rep(0, num)) # initialize macrolide resistance status attribute (0 = susceptible, 1 = resistant)

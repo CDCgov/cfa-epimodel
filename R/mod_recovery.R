@@ -4,10 +4,9 @@
 #' based on sex-specific rates, resets infection attrs if recovered
 #'
 #' @inheritParams vitals
-#' @importFrom EpiModel get_attr set_attr set_epi get_param
 #'
 #' @export
-mod_mgen_recovery <- function(dat, at) {
+mod_recovery_mgen <- function(dat, at) {
   # Parameters
   rec_rate_m <- 1 / get_param(dat, "inf_dur_m")
   rec_rate_f <- 1 / get_param(dat, "inf_dur_f")

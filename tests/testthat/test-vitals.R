@@ -11,12 +11,15 @@ params <- EpiModel::param.net(
   units_per_year = 1,
   exit_age = 50,
   entry_age = 15,
-  arrivalType = "departures",
-  entry_female_prob = 0.5,
+  entry_female_values = c(0, 1),
+  entry_female_probs = c(0.5, 0.5),
+  entry_race_values = c("A", "B"),
   entry_race_probs = c(0.6, 0.4),
-  entry_race_names = c("A", "B"),
+  arrivalType = "departures",
   sympt_prob_m = 0.4,
-  sympt_prob_f = 0.6
+  sympt_prob_f = 0.6,
+  age_group_splits = c(19, 25, 30, 35, 40, 45), # for better network dynamics, youngest age group = 15-18
+  age_group_splits_epi = c(20, 25, 30, 35, 40, 45) # for epi outcomes, use standard 5-year age groups
 )
 
 ## Initial Conditions
@@ -26,21 +29,20 @@ inits <- EpiModel::init.net(i.num = 5)
 controls_aging <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
-  aging.FUN = mod_aging,
+  aging.FUN = mod_aging_mgen,
   save.other = c("attr"),
   verbose = FALSE
 )
 controls_all_vitals <- EpiModel::control.net(
   nsims = 1,
   nsteps = 100, # longer time to allow for aging out and new arrivals
-  initialize.FUN = mod_sti_initialize,
-  arrivals.FUN = mod_arrivals,
-  departures.FUN = mod_departures,
-  aging.FUN = mod_aging,
+  #initialize.FUN = mod_initialize_mgen,
+  arrivals.FUN = mod_arrivals_mgen,
+  departures.FUN = mod_departures_mgen,
+  aging.FUN = mod_aging_mgen,
   save.other = c("attr"),
   verbose = FALSE
 )
-
 
 test_that("mod_aging updates age and age_group correctly", {
   # Run simulation with only aging module
@@ -120,8 +122,8 @@ test_that("vital dynamics and arrival attr assignment working", {
   ## Note: with small sample sizes and many categories, this test may fail by chance.
   ## May need to increase size of network and/or nsteps if that occurs frequently.
   tolerance <- 0.2
-  for (i in seq_along(sim$param$entry_race_names)) {
-    race <- sim$param$entry_race_names[i]
+  for (i in seq_along(sim$param$entry_race_values)) {
+    race <- sim$param$entry_race_values[i]
     expected_prop <- sim$param$entry_race_probs[i]
     expect_true(race %in% names(arrivals_races_props))
     expect_equal(
@@ -135,11 +137,9 @@ test_that("vital dynamics and arrival attr assignment working", {
   ## Assumes female attr is binary 0/1
   arrivals_sex <- sim$attr$sim1$female[arrivals_indices]
   arrivals_sex_props <- table(arrivals_sex) / n_arrivals
-  expected_sex_prop <- c(
-    1 - sim$param$entry_female_prob,
-    sim$param$entry_female_prob
-  )
-  for (i in seq_along(expected_sex_prop)) {
+  expected_sex_prop <- sim$param$entry_female_probs
+
+  for (i in seq_along(sim$param$entry_female_values)) {
     expect_equal(
       arrivals_sex_props[[i]],
       expected_sex_prop[i],

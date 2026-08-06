@@ -2,7 +2,7 @@
 fit <- readRDS(test_path("input", "test_nw.RDS"))
 
 # --------------------------------------------------------------
-# TESTING AGE-SPECIFIC ACT RATES IN mod_infection --------------
+# TESTING AGE-SPECIFIC ACT RATES IN mod_infection_mgen--------------
 #--------------------------------------------------------------
 ag <- fit$newnetwork %v% "age_group"
 ngrps <- length(unique(ag))
@@ -13,7 +13,6 @@ single_rate_params <- rate_per_group_params <-
   rate_length_long_params <- rate_length_short_params <- list(
     inf_prob_mtf = 1,
     inf_prob_ftm = 1,
-    acute_duration = 5,
     cond_prob_vec = 0,
     cond_eff = 0,
     sympt_prob_m = 0.4,
@@ -28,14 +27,14 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
-  initialize.FUN = mod_sti_initialize,
-  infection.FUN = mod_infection,
+  initialize.FUN = mod_initialize_mgen,
+  infection.FUN = mod_infection_mgen,
   epi.by = "female",
   save.other = c("attr"),
   verbose = FALSE
 )
 
-test_that("mod_infection works with single act_rate_vec value", {
+test_that("mod_infection_mgenworks with single act_rate_vec value", {
   single_rate_params$act_rate_vec <- 2
   params_single_rate <- do.call(
     EpiModel::param.net,
@@ -47,11 +46,11 @@ test_that("mod_infection works with single act_rate_vec value", {
 
   # And double check that infections occurred
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
-test_that("mod_infection works with act_rate_vec value per age group", {
+test_that("mod_infection_mgenworks with act_rate_vec value per age group", {
   rate_per_group_params$act_rate_vec <- rep(2, ngrps)
   params_rate_per_group <- do.call(
     EpiModel::param.net,
@@ -63,11 +62,11 @@ test_that("mod_infection works with act_rate_vec value per age group", {
 
   # And double check that infections occurred
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
-test_that("mod_infection errors with wrong length act_rate_vec", {
+test_that("mod_infection_mgenerrors with wrong length act_rate_vec", {
   rate_length_long_params$act_rate_vec <- rep(2, ngrps + 3)
   params_rate_length_long <- do.call(
     EpiModel::param.net,
@@ -102,7 +101,7 @@ test_that("mod_infection errors with wrong length act_rate_vec", {
 })
 
 # --------------------------------------------------------------
-# TESTING DIRECTIONAL ACT RATES IN mod_infection --------------
+# TESTING DIRECTIONAL ACT RATES IN mod_infection_mgen--------------
 #--------------------------------------------------------------
 
 ## Parameters
@@ -130,14 +129,13 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
-  initialize.FUN = mod_sti_initialize,
-  infection.FUN = mod_infection,
-  epi.by = "female",
+  initialize.FUN = mod_initialize_mgen,
+  infection.FUN = mod_infection_mgen,
   save.other = c("attr"),
   verbose = FALSE
 )
 
-test_that("mod_infection works with directional infection probabilities", {
+test_that("mod_infection_mgenworks with directional infection probabilities", {
   # Testing MTF directionality --------------------------------------
   sim_mtf <- EpiModel::netsim(fit, params_only_mtf, inits, controls) |>
     suppressMessages() |>
@@ -147,11 +145,11 @@ test_that("mod_infection works with directional infection probabilities", {
   # (only extracts epi list, not attributes)
   df <- as.data.frame(sim_mtf)
   # Sum of vector of new infections over time should be > 0
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
   # Sum of vector of new infections among females should = sum
   # of vector of all new infections
-  sum_female_inc_vec <- sum(df$si.flow.female1, na.rm = TRUE)
+  sum_female_inc_vec <- sum(df$si_flow_f, na.rm = TRUE)
   expect_equal(sum_female_inc_vec, sum_inc_vec)
 
   # Testing FTM directionality --------------------------------------
@@ -162,16 +160,16 @@ test_that("mod_infection works with directional infection probabilities", {
   df <- as.data.frame(sim_ftm)
   # Double check that infections occurred
   # Sum of vector of new infections over time should be > 0
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
   # Sum of vector of new infections among males should = sum
   # of vector of all new infections
-  sum_male_inc_vec <- sum(df$si.flow.female0, na.rm = TRUE)
+  sum_male_inc_vec <- sum(df$si_flow_m, na.rm = TRUE)
   expect_equal(sum_male_inc_vec, sum_inc_vec)
 })
 
 # --------------------------------------------------------------
-# TESTING CONDOM USE AND EFFECTIVENESS IN mod_infection --------------
+# TESTING CONDOM USE AND EFFECTIVENESS IN mod_infection_mgen--------------
 #--------------------------------------------------------------
 ## Static parameters
 condom_no_trans_params <- condom_no_eff_params <-
@@ -192,8 +190,8 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
-  initialize.FUN = mod_sti_initialize,
-  infection.FUN = mod_infection,
+  initialize.FUN = mod_initialize_mgen,
+  infection.FUN = mod_infection_mgen,
   epi.by = "female",
   save.other = c("attr"),
   verbose = FALSE
@@ -212,7 +210,7 @@ test_that("when condom use & effectiveness = 1, we get no transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_equal(sum_inc_vec, 0)
 })
 
@@ -229,7 +227,7 @@ test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -246,7 +244,7 @@ test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si.flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -288,7 +286,7 @@ test_that("invalid parameter values throw errors", {
 })
 
 #--------------------------------------------------------------
-# TESTING SYMPTOMATIC INFECTION MODIFIER IN mod_infection --------------
+# TESTING SYMPTOMATIC INFECTION MODIFIER IN mod_infection_mgen--------------
 #--------------------------------------------------------------
 
 ## Static parameters
@@ -309,8 +307,8 @@ inits <- EpiModel::init.net(i.num = 50)
 controls <- EpiModel::control.net(
   nsims = 1,
   nsteps = 10,
-  initialize.FUN = mod_sti_initialize,
-  infection.FUN = mod_infection,
+  initialize.FUN = mod_initialize_mgen,
+  infection.FUN = mod_infection_mgen,
   epi.by = "female",
   save.other = c("attr"),
   verbose = FALSE

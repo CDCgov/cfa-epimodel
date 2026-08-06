@@ -5,12 +5,10 @@
 #' for symptomatic persons
 #'
 #' @inheritParams vitals
-#' @importFrom EpiModel get_attr set_attr set_epi get_param
-#' set_transmat discord_edgelist
 #'
 #' @export
 
-mod_infection <- function(dat, at) {
+mod_infection_mgen <- function(dat, at) {
   # Notes
   ## NEED TESTS FOR SYMPTOMATIC MODIFIERS
   ## needs AMR tracker implementation (to add when AMR module is done)

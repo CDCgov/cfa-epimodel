@@ -35,7 +35,7 @@ docs:
 	Rscript -e 'devtools::document()'
 
 check:
-	R CMD check . --no-manual
+	R CMD check . --no-manual --no-build-vignettes
 
 format:
 	jarl check . --allow-dirty

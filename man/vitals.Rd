@@ -2,16 +2,16 @@
 % Please edit documentation in R/mod_vital_dynamics.R
 \name{vitals}
 \alias{vitals}
-\alias{mod_aging}
-\alias{mod_departures}
-\alias{mod_arrivals}
+\alias{mod_aging_mgen}
+\alias{mod_departures_mgen}
+\alias{mod_arrivals_mgen}
 \title{Modules for vital dynamics}
 \usage{
-mod_aging(dat, at)
+mod_aging_mgen(dat, at)
 
-mod_departures(dat, at)
+mod_departures_mgen(dat, at)
 
-mod_arrivals(dat, at)
+mod_arrivals_mgen(dat, at)
 }
 \arguments{
 \item{dat}{Main \code{netsim_dat} object containing a \code{networkDynamic}

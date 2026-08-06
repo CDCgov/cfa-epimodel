@@ -71,8 +71,7 @@ get_target_degrees <- function(
 #' @return A df with time, simulation id, edges for all networks,
 #' the difference from target edges, and the percentage diff from target edges.
 #' @importFrom rlang .data := !!
-#' @importFrom dplyr select mutate filter group_by ungroup all_of bind_rows
-#'             rename
+#' @importFrom dplyr select mutate filter group_by ungroup all_of bind_rows rename
 #' @importFrom tidyr pivot_longer
 #' @export
 get_edges_history <- function(

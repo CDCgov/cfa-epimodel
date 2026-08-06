@@ -4,18 +4,13 @@
 #'
 #' @param dat Main \code{netsim_dat} object containing a \code{networkDynamic}
 #'        object and other initialization information passed from
-#'        \code{\link{netsim}}.
+#'        \code{\link{EpiModel::netsim}}.
 #' @param at Current time step.
 #'
-#' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param
-#' append_core_attr append_attr get_edgelist apportion_lr
-#'
 #' @name vitals
-NULL
-
 #' @rdname vitals
 #' @export
-mod_aging <- function(dat, at) {
+mod_aging_mgen <- function(dat, at) {
   # Calc Updated Age Attributes
   age <- get_attr(dat, "age")
   age_group <- get_attr(dat, "age_group")
@@ -54,7 +49,7 @@ mod_aging <- function(dat, at) {
 # Departures Module ----------------------------------------------------
 #' @rdname vitals
 #' @export
-mod_departures <- function(dat, at) {
+mod_departures_mgen <- function(dat, at) {
   ## Attributes
   active <- get_attr(dat, "active")
   exitTime <- get_attr(dat, "exitTime")
@@ -94,15 +89,21 @@ mod_departures <- function(dat, at) {
 # Arrivals Module ----------------------------------------------------
 #' @rdname vitals
 #' @export
-mod_arrivals <- function(dat, at) {
+mod_arrivals_mgen <- function(dat, at) {
   ## Parameters
   n <- sum(get_attr(dat, "active") == 1)
   aType <- get_param(dat, "arrivalType")
-  #female_prob <- get_param(dat, "entry_female_prob")
-  #race_probs <- get_param(dat, "entry_race_probs")
-  #race_names <- get_param(dat, "entry_race_names")
-  #entry_age <- get_param(dat, "entry_age")
 
+  ## Demographic attributes for new arrivals
+  female_values <- get_param(dat, "entry_female_values")
+  female_probs <- get_param(dat, "entry_female_probs")
+  race_values <- get_param(dat, "entry_race_values")
+  race_probs <- get_param(dat, "entry_race_probs")
+  entry_age <- get_param(dat, "entry_age")
+  entry_age_group <- get_param(dat, "age_group_splits")[[1]]
+  entry_age_group_epi <- get_param(dat, "age_group_splits_epi")[[1]]
+
+  ## Set up for new arrivals
   nArrivals <- 0
 
   if (!aType %in% c("rate", "departures")) {
@@ -123,101 +124,72 @@ mod_arrivals <- function(dat, at) {
 
   if (nArrivals > 0) {
     ## Determine sex, race
-    #  if (nArrivals <= 5) {
-    # for small nArrivals, sample individually
-    # 5 is arbitrary cutoff but seems to work well in testing
-    #    arrival_sex <- sample(
-    #      c(0, 1),
-    #      nArrivals,
-    #      prob = c(1 - female_prob, female_prob),
-    #      replace = TRUE
-    #    )
-    #    arrival_race <- sample(
-    #       race_names,
-    #       nArrivals,
-    #       prob = race_probs,
-    #       replace = TRUE
-    #     )
-    #    } else {
-    # use base EpiModel apportion_lr function if nArrivals > 5
-    #      arrival_sex <- apportion_lr(
-    #        nArrivals,
-    #        c(0, 1),
-    #        c(1 - female_prob, female_prob)
-    #      )
-    #      arrival_race <- apportion_lr(nArrivals, race_names, race_probs)
-    #    }
+    if (nArrivals <= 5) {
+      ## for small nArrivals, sample individually
+      ## 5 is arbitrary cutoff but seems to work well in testing
+      arrival_sex <- sample(
+        female_values,
+        nArrivals,
+        prob = female_probs,
+        replace = TRUE
+      )
+      arrival_race <- sample(
+        race_values,
+        nArrivals,
+        prob = race_probs,
+        replace = TRUE
+      )
+    } else {
+      ## use base EpiModel apportion_lr function if nArrivals > 5
+      arrival_sex <- apportion_lr(
+        nArrivals,
+        female_values,
+        female_probs
+      )
+      arrival_race <- apportion_lr(nArrivals, race_values, race_probs)
+    }
+
+    ## Record length of attr vectors before new arrivals
+    l <- length(get_attr_list(dat)[[1]])
 
     ## Update attributes for new arrivals
-    ### EpiModel default core attrs: active, entryTime, exitTime, unique_id
+    ## EpiModel default core attrs: active, entryTime, exitTime, unique_id
     dat <- append_core_attr(dat, at, nArrivals)
-    dat <- append_sti_attr(dat, at, nArrivals)
-    #dat <- append_attr(dat, "status", "s", nArrivals)
-    #dat <- append_attr(dat, "inf_time", NA, nArrivals)
-    #dat <- append_attr(dat, "rec_time", NA, nArrivals)
-    #dat <- append_attr(dat, "sympt", NA, nArrivals)
-    #dat <- append_attr(dat, "age", entry_age, nArrivals)
-    #dat <- append_attr(dat, "age_group", 1, nArrivals)
-    #dat <- append_attr(dat, "race", arrival_race, nArrivals)
-    #dat <- append_attr(dat, "female", arrival_sex, nArrivals)
-    #dat <- append_attr(dat, "amr_m", 0, nArrivals) # assume new arrivals are macrolide susceptible
-    #dat <- append_attr(dat, "amr_q", 0, nArrivals) # assume new arrivals are quinolone susceptible
-    #dat <- append_attr(dat, "curr_tx", NA, nArrivals)
-    #dat <- append_attr(dat, "tx_end_day", NA, nArrivals)
+    ## Custom attrs
+    dat <- append_attr(dat, "status", "s", nArrivals)
+
+    ### Required attrs for network formation: age, age_group, female, race
+    dat <- append_attr(dat, "age", entry_age, nArrivals)
+    dat <- append_attr(dat, "age_group", entry_age_group, nArrivals)
+    dat <- append_attr(dat, "age_group_epi", entry_age_group_epi, nArrivals)
+    dat <- append_attr(dat, "race", arrival_race, nArrivals)
+    dat <- append_attr(dat, "female", arrival_sex, nArrivals)
+
+    # Assign all other attrs NA (e.g. inf_time, rec_time, sympt, etc)
+    # Attrs that need assignment have length equal to l,
+    # the length of attr vectors before new arrivals
+    attr_list <- get_attr_list(dat)
+    attr_names <- names(attr_list)
+    for (attr_name in attr_names) {
+      if (length(attr_list[[attr_name]]) == l) {
+        dat <- append_attr(dat, attr_name, NA, nArrivals)
+      }
+    }
+
+    # Check that all attr vectors are now same length by pulling attr_list
+    # again and checking lengths
+    attr_lengths <- lengths(get_attr_list(dat))
+    if (length(unique(attr_lengths)) != 1) {
+      stop(paste0(
+        "Not all attr vectors are same length after new arrivals at time ",
+        at
+      ))
+    }
   }
+
   ## Summary statistics
   dat <- set_epi(dat, "a.flow", at, nArrivals)
 
-  # Return
-  dat
-}
-
-#' @export
-append_sti_attr <- function(dat, at, n.new) {
-  #might not need at arg
-  #browser()
-  attrs <- get_param(dat, "sti_entry_attrs")
-  for (attr in attrs) {
-    attr_name <- attr$name
-    attr_value <- attr$value
-    attr_prob <- attr$prob
-    # most attrs will be a single value at entry(e.g. age)
-    if (length(attr_prob) == 1) {
-      dat <- append_attr(dat, attr_name, attr_value, n.new)
-    } else if (length(attr_prob) > 1) {
-      # some attrs may have a range of values at entry (e.g. race)
-      # make sure attr_prob is same length as attr_value
-      # and attr_prob sums to 1
-      if (length(attr_prob) != length(attr_value)) {
-        stop(paste0(
-          "Length of attr_prob for ",
-          attr_name,
-          " in sti_entry_attrs must be same as length of attr_value"
-        ))
-      }
-      if (sum(attr_prob) != 1) {
-        stop(paste0(
-          "attr_prob for ",
-          attr_name,
-          " in sti_entry_attrs must sum to 1"
-        ))
-      }
-
-      if (n.new > 5) {
-        # use base EpiModel apportion_lr function if n.new > 5
-        value_vec <- apportion_lr(n.new, attr_value, attr_prob)
-      } else {
-        # for small n.new, sample individually
-        value_vec <- sample(
-          attr_value,
-          n.new,
-          prob = attr_prob,
-          replace = TRUE
-        )
-      }
-      dat <- append_attr(dat, attr_name, value_vec, n.new)
-    }
-  }
-  # return dat object with new attributes appended
+  ## Return
   dat
 }
