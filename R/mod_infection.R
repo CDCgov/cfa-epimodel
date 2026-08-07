@@ -207,9 +207,9 @@ mod_infection_mgen <- function(dat, at) {
   }
 
   ## Save incidence vector
-  dat <- set_epi(dat, "si_flow", at, tot_inf)
-  dat <- set_epi(dat, "si_flow_m", at, n_inf)
-  dat <- set_epi(dat, "si_flow_f", at, n_inf_g2)
+  dat <- set_epi(dat, "se_flow", at, tot_inf)
+  dat <- set_epi(dat, "se_flow_m", at, n_inf)
+  dat <- set_epi(dat, "se_flow_f", at, n_inf_g2)
 
   # Return
   dat

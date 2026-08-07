@@ -2,71 +2,37 @@
 #'
 #' @description This module handles the clinical aspects of M. genitalium infection,
 #' including screening, testing, diagnosis, and treatment outcomes
-#' depending on the specified scenario.
+#' depending on the specified scenario. If treatment is sucessful, patients are flagged
+#' for recovery but tracking occurs in the recovery module.
 #'
 #' @inheritParams vitals
 #'
 #' @export
 
 mod_clinical_mgen <- function(dat, at) {
-  # If time = 2, initialize relevant epi trackers and nodal attributes
-  if (at == 2) {
-    # Nodal attributes
-    num <- sum(get_attr(dat, "active") == 1)
-    dat <- set_attr(dat, "curr_tx", rep(NA, num)) # initialize treatment status attribute
-    dat <- set_attr(dat, "tx_end_day", rep(NA, num)) # initialize treatment evaluation day
-  }
-
   # Get nodal attributes
   active <- get_attr(dat, "active")
   female <- get_attr(dat, "female") # biological sex, where 1 = female and 0 = male
-  status <- get_attr(dat, "status") # infection status (s = susceptible, i = infected)
+  status <- get_attr(dat, "status") # infection status (s = susceptible, i = infected, e = exposed)
   sympt <- get_attr(dat, "sympt") # symptom status (1 = symptomatic, 0 = asymptomatic)
-  inf_time <- get_attr(dat, "inf_time") # time of infection
-  rec_time <- get_attr(dat, "rec_time") # time of recovery
   amr_m <- get_attr(dat, "amr_m") # macrolide resistance status, where 0 = susceptible and 1 = resistant
   amr_q <- get_attr(dat, "amr_q") # quinolone resistance status, where 0 = susceptible and 1 = resistant
-  curr_tx <- get_attr(dat, "curr_tx") # current treatment status (NA = no treatment, 1 = doxycycline, 2 = moxifloxacin)
+  curr_tx <- get_attr(dat, "curr_tx") # current treatment status (NA = no treatment, 1 = doxycycline, 2 = moxifloxacin, 3 = azithromycin, 4 = other)
   tx_end_day <- get_attr(dat, "tx_end_day") # day of treatment evaluation (NA if not treated)
-
-  # Get parameters
-  # NEED TO TRACK RECOVERIES HERE AND IN RECOVERY MODULE TO ENSURE PROPER CLINICAL FLOW
-  # IN BOTH PLACES check if is.flow epi value assigned, then add to it
-  rec_state <- get_param(dat, "rec_state") # recovery state (e.g., "s" for susceptible)
-  flow_name <- paste0("i", rec_state, "_flow") # name of epi variable to track flow into recovery state
+  tx_success <- get_attr(dat, "tx_success") # treatment success status (NA = not treated, 1 = successful & will recover this time step)
 
   # Establish empty vectors for clinical flow logic and tracking of clinical outcomes
   # These will be updated at each time step regardless of scenario, assign default vals here
   # Intermediate vectors not used for tracking but necessary for clinical flow logic
   # do NOT need to be initialized here
-  n_recovered_m <- 0 # n infected who recover from doxycycline tx, male
-  n_recovered_f <- 0 # n infected who recover from doxycycline tx, female
   n_tx_doxy_m <- 0 # n infected who begin treatment with doxycycline, male
   n_tx_doxy_f <- 0 # n infected who begin treatment with doxycycline, female
   n_tx_moxi_m <- 0 # n infected who begin treatment with moxifloxacin, male
   n_tx_moxi_f <- 0 # n infected who begin treatment with moxifloxacin, female
   n_tx_az_m <- 0 # n infected who begin treatment with azithromycin, male
   n_tx_az_f <- 0 # n infected who begin treatment with azithromycin, female
-
-  # get current number of recoveries, some may already naturally cleared infection
-  n_recovered_m <- get_epi(
-    dat,
-    paste0(flow_name, "_m"),
-    at,
-    override.null.error = TRUE
-  )
-  n_recovered_f <- get_epi(
-    dat,
-    paste0(flow_name, "_f"),
-    at,
-    override.null.error = TRUE
-  )
-  if (is.null(n_recovered_m)) {
-    n_recovered_m <- 0
-  }
-  if (is.null(n_recovered_f)) {
-    n_recovered_f <- 0
-  }
+  n_tx_other_m <- 0 # n infected who begin treatment with other, male
+  n_tx_other_f <- 0 # n infected who begin treatment with other, female
 
   # Get scenario number for additional parameters and clinical flow logic
   scenario <- get_param(dat, "scenario")
@@ -86,8 +52,7 @@ mod_clinical_mgen <- function(dat, at) {
     duration_doxy_tx <- get_param(dat, "duration_doxy_tx")
     duration_moxi_tx <- get_param(dat, "duration_moxi_tx")
     naat_sensitivity <- get_param(dat, "naat_sensitivity")
-    p_doxy_failure <- get_param(dat, "p_doxy_failure")
-    p_moxi_failure <- get_param(dat, "p_moxi_failure")
+    p_doxy_success <- get_param(dat, "p_doxy_success")
 
     # Step 1: New Patients Seek Care and Get Treated with Doxycycline ---------
     ## Get ids of symptomatic infected individuals eligible for
@@ -246,9 +211,6 @@ mod_clinical_mgen <- function(dat, at) {
   dat <- set_epi(dat, "n_tx_moxi_f", at, n_tx_moxi_f)
   dat <- set_epi(dat, "n_tx_az_m", at, n_tx_az_m)
   dat <- set_epi(dat, "n_tx_az_f", at, n_tx_az_f)
-  dat <- set_epi(dat, "is_flow", at, sum(n_recovered_m, n_recovered_f))
-  dat <- set_epi(dat, "is_flow_m", at, n_recovered_m)
-  dat <- set_epi(dat, "is_flow_f", at, n_recovered_f)
 
   # Update Attributes
   dat <- set_attr(dat, "curr_tx", curr_tx)

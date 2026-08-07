@@ -12,6 +12,9 @@ mod_recovery_mgen <- function(dat, at) {
   rec_rate_f <- 1 / get_param(dat, "inf_dur_f")
   rec_state <- get_param(dat, "rec_state")
 
+  rec_state <- get_param(dat, "rec_state") # recovery state (e.g., "s" for susceptible)
+  flow_name <- paste0("i", rec_state, "_flow") # name of epi variable to track flow into recovery state
+
   # Attributes
   active <- get_attr(dat, "active")
   status <- get_attr(dat, "status")

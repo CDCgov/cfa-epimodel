@@ -133,6 +133,9 @@ init_mgen_status <- function(dat) {
   # initialize resistance status attributes (0 = susceptible, 1 = resistant, NA = not infected)
   dat <- set_attr(dat, "amr_q", rep(NA, num))
   dat <- set_attr(dat, "amr_m", rep(NA, num))
+  dat <- set_attr(dat, "curr_tx", rep(NA, num))
+  dat <- set_attr(dat, "tx_end_day", rep(NA, num))
+  dat <- set_attr(dat, "tx_success", rep(NA, num))
 
   # Optional, save dat object for testing
   saveout <- get_control(dat, "save_dat", override.null.error = TRUE)
