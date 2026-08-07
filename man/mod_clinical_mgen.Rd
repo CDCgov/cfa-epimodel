@@ -9,12 +9,13 @@ mod_clinical_mgen(dat, at)
 \arguments{
 \item{dat}{Main \code{netsim_dat} object containing a \code{networkDynamic}
 object and other initialization information passed from
-\code{\link{netsim}}.}
+\code{\link{EpiModel::netsim}}.}
 
 \item{at}{Current time step.}
 }
 \description{
 This module handles the clinical aspects of M. genitalium infection,
 including screening, testing, diagnosis, and treatment outcomes
-depending on the specified scenario.
+depending on the specified scenario. If treatment is sucessful, patients are flagged
+for recovery but tracking occurs in the recovery module.
 }

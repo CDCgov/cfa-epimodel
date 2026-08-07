@@ -101,11 +101,11 @@ init_mgen_status <- function(dat) {
 
   # Defaults
   status <- rep("s", num)
-  inf_time <- sympt <- rec_time <- rep(NA, num)
+  inf_time <- sympt <- rec_time <- ei_time <- rep(NA, num)
 
   # Get initial infs
   ids_inf <- sample(num, i_num)
-  status[ids_inf] <- "i"
+  status[ids_inf] <- "e"
   inf_time[ids_inf] <- 1
 
   ## symptomatic status
@@ -117,18 +117,37 @@ init_mgen_status <- function(dat) {
     sympt_prob_f,
     sympt_prob_m
   )
-  sympt_vec <- which(rbinom(length(ids_inf), 1, sympt_prob_vec) == 1)
-  ids_sympt <- ids_inf[sympt_vec]
+  ids_sympt <- get_successful_ids_binom(ids_inf, sympt_prob_vec)
   ids_asympt <- setdiff(ids_inf, ids_sympt)
   sympt[ids_sympt] <- 1
   sympt[ids_asympt] <- 0
 
-  # Set attrs
+  # Calculate incubation period and infection duration for newly infected nodes
+  mean_incubation_period <- get_param(dat, "mean_incubation_period")
+  mean_inf_dur_m <- get_param(dat, "mean_infection_duration_m")
+  mean_inf_dur_f <- get_param(dat, "mean_infection_duration_f")
 
+  incubation_period <- ceiling(rnorm(
+    i_num,
+    mean = mean_incubation_period,
+    sd = mean_incubation_period / 2
+  ))
+
+  inf_dur_vec <- ifelse(
+    female[ids_inf] == 1,
+    ceiling(rnorm(i_num, mean = mean_inf_dur_f, sd = mean_inf_dur_f / 2)),
+    ceiling(rnorm(i_num, mean = mean_inf_dur_m, sd = mean_inf_dur_m / 2))
+  )
+
+  ei_time[ids_inf] <- incubation_period
+  rec_time[ids_inf] <- inf_dur_vec
+
+  # Set attrs
   dat <- set_attr(dat, "status", status)
   dat <- set_attr(dat, "inf_time", inf_time)
   dat <- set_attr(dat, "sympt", sympt)
   dat <- set_attr(dat, "rec_time", rec_time)
+  dat <- set_attr(dat, "ei_time", ei_time)
   # THESE WILL NEED TO Be assigned for infected nodes ONCE AMR STATUS INCLUDED IN INITIALIZATION
   # initialize resistance status attributes (0 = susceptible, 1 = resistant, NA = not infected)
   dat <- set_attr(dat, "amr_q", rep(NA, num))

@@ -25,6 +25,9 @@ mod_clinical_mgen <- function(dat, at) {
   # These will be updated at each time step regardless of scenario, assign default vals here
   # Intermediate vectors not used for tracking but necessary for clinical flow logic
   # do NOT need to be initialized here
+  n_naat_tests <- 0
+  n_amr_m_tests <- 0
+  n_amr_q_tests <- 0
   n_tx_doxy_m <- 0 # n infected who begin treatment with doxycycline, male
   n_tx_doxy_f <- 0 # n infected who begin treatment with doxycycline, female
   n_tx_moxi_m <- 0 # n infected who begin treatment with moxifloxacin, male
@@ -196,15 +199,17 @@ mod_clinical_mgen <- function(dat, at) {
     duration_moxi_tx <- get_param(dat, "duration_moxi_tx")
     duration_az_tx <- get_param(dat, "duration_az_tx")
     naat_sensitivity <- get_param(dat, "naat_sensitivity")
-    p_doxy_failure <- get_param(dat, "p_doxy_failure")
-    p_moxi_failure <- get_param(dat, "p_moxi_failure")
-    p_az_failure <- get_param(dat, "p_az_failure")
+    p_doxy_success <- get_param(dat, "p_doxy_success")
+
     # Step 1: New Patients Seek Care and Get Treated with Doxycycline ---------
     # Step 2: Sucess/Failure of Doxycycline Treatment ---------
     # Step 3: NAAT for Doxycycline Failures & Resistance-Guided Tx---------
     # Step 4: Sucess/Failure of Moxifloxacin or Azithromycin Treatment ---------
   }
   # Update Epi Trackers
+  dat <- set_epi(dat, "n_naat_tests", at, n_naat_tests)
+  dat <- set_epi(dat, "n_amr_m_tests", at, n_amr_m_tests)
+  dat <- set_epi(dat, "n_amr_q_tests", at, n_amr_q_tests)
   dat <- set_epi(dat, "n_tx_doxy_m", at, n_tx_doxy_m)
   dat <- set_epi(dat, "n_tx_doxy_f", at, n_tx_doxy_f)
   dat <- set_epi(dat, "n_tx_moxi_m", at, n_tx_moxi_m)

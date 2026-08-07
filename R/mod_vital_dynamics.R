@@ -100,8 +100,8 @@ mod_arrivals_mgen <- function(dat, at) {
   race_values <- get_param(dat, "entry_race_values")
   race_probs <- get_param(dat, "entry_race_probs")
   entry_age <- get_param(dat, "entry_age")
-  entry_age_group <- get_param(dat, "age_group_splits")[[1]]
-  entry_age_group_epi <- get_param(dat, "age_group_splits_epi")[[1]]
+  entry_age_group <- 1
+  entry_age_group_epi <- 1
 
   ## Set up for new arrivals
   nArrivals <- 0
