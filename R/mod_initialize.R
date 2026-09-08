@@ -11,15 +11,17 @@
 #'        \code{control$start > 1}, an object of class \code{netsim}. When
 #'        multiple networks are used, the node sets (including network size
 #'        and nodal attributes) are assumed to be the same for all networks.
-#' @param param An \code{EpiModel} object of class \code{\link{EpiModel::param.net}}.
-#' @param init An \code{EpiModel} object of class \code{\link{EpiModel::init.net}}.
-#' @param control An \code{EpiModel} object of class \code{\link{EpiModel::control.net}}.
+#' @param param An \code{EpiModel} object of class param.net.
+#' @param init An \code{EpiModel} object of class init.net.
+#' @param control An \code{EpiModel} object of class control.net.
 #' @param s Simulation number, used for restarting dependent simulations.
 #' @details When re-initializing a simulation, the \code{netsim} object passed
 #'          to \code{initialize.net} must contain the elements \code{param},
 #'          \code{nwparam}, \code{epi}, \code{coef.form}, and \code{num.nw}.
 #'
 #' @return A \code{netsim_dat} class main data object.
+#'
+#' @importFrom EpiModel create_dat_object init_nets get_attr_prop sim_nets_t1 summary_nets get_control padded_vector set_param
 #'
 #' @export
 
@@ -89,9 +91,10 @@ mod_initialize_mgen <- function(x, param, init, control, s) {
 #' transmission models. This function is called within \code{mod_initialize_mgen}
 #' to set up the initial infection status of the population based on the number
 #' of initial infections specified in the \code{init} object.
-#' @inheritParams mod_initialize_mgen
+#' @param dat The main \code{dat} object containing network and epidemic information.
 #' @return A modified \code{dat} object with initialized infections
 #' @rdname mod_initialize_mgen
+#' @importFrom EpiModel get_attr set_attr set_epi get_param get_control get_init
 #' @export
 init_mgen_status <- function(dat) {
   num <- sum(get_attr(dat, "active") == 1)
@@ -105,7 +108,7 @@ init_mgen_status <- function(dat) {
 
   # Get initial infs
   ids_inf <- sample(num, i_num)
-  status[ids_inf] <- "e"
+  status[ids_inf] <- "i"
   inf_time[ids_inf] <- 1
 
   ## symptomatic status
@@ -123,15 +126,15 @@ init_mgen_status <- function(dat) {
   sympt[ids_asympt] <- 0
 
   # Calculate incubation period and infection duration for newly infected nodes
-  mean_incubation_period <- get_param(dat, "mean_incubation_period")
+  #mean_incubation_period <- get_param(dat, "mean_incubation_period")
   mean_inf_dur_m <- get_param(dat, "mean_infection_duration_m")
   mean_inf_dur_f <- get_param(dat, "mean_infection_duration_f")
 
-  incubation_period <- ceiling(rnorm(
-    i_num,
-    mean = mean_incubation_period,
-    sd = mean_incubation_period / 2
-  ))
+  #incubation_period <- ceiling(rnorm(
+  #  i_num,
+  #  mean = mean_incubation_period,
+  #  sd = mean_incubation_period / 2
+  #))
 
   inf_dur_vec <- ifelse(
     female[ids_inf] == 1,
@@ -139,7 +142,7 @@ init_mgen_status <- function(dat) {
     ceiling(rnorm(i_num, mean = mean_inf_dur_m, sd = mean_inf_dur_m / 2))
   )
 
-  ei_time[ids_inf] <- incubation_period
+  #ei_time[ids_inf] <- incubation_period
   rec_time[ids_inf] <- inf_dur_vec
 
   # Set attrs

@@ -17,7 +17,10 @@ single_rate_params <- rate_per_group_params <-
     cond_eff = 0,
     sympt_prob_m = 0.4,
     sympt_prob_f = 0.6,
-    sympt_inf_modifier = 1
+    sympt_inf_modifier = 1,
+    mean_incubation_period = 7, # PLACEHOLDER
+    mean_infection_duration_m = 150, # PLACEHOLDER
+    mean_infection_duration_f = 300 # PLACEHOLDER
   )
 
 ## Initial Conditions
@@ -46,7 +49,7 @@ test_that("mod_infection_mgenworks with single act_rate_vec value", {
 
   # And double check that infections occurred
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -62,7 +65,7 @@ test_that("mod_infection_mgenworks with act_rate_vec value per age group", {
 
   # And double check that infections occurred
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -111,7 +114,10 @@ only_mtf_params <- only_ftm_params <- list(
   act_rate_vec = 2,
   sympt_prob_m = 0.4,
   sympt_prob_f = 0.6,
-  sympt_inf_modifier = 1
+  sympt_inf_modifier = 1,
+  mean_incubation_period = 7, # PLACEHOLDER
+  mean_infection_duration_m = 150, # PLACEHOLDER
+  mean_infection_duration_f = 300 # PLACEHOLDER
 )
 
 only_mtf_params$inf_prob_mtf <- 1
@@ -145,11 +151,11 @@ test_that("mod_infection_mgenworks with directional infection probabilities", {
   # (only extracts epi list, not attributes)
   df <- as.data.frame(sim_mtf)
   # Sum of vector of new infections over time should be > 0
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
   # Sum of vector of new infections among females should = sum
   # of vector of all new infections
-  sum_female_inc_vec <- sum(df$si_flow_f, na.rm = TRUE)
+  sum_female_inc_vec <- sum(df$se_flow_f, na.rm = TRUE)
   expect_equal(sum_female_inc_vec, sum_inc_vec)
 
   # Testing FTM directionality --------------------------------------
@@ -160,11 +166,11 @@ test_that("mod_infection_mgenworks with directional infection probabilities", {
   df <- as.data.frame(sim_ftm)
   # Double check that infections occurred
   # Sum of vector of new infections over time should be > 0
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
   # Sum of vector of new infections among males should = sum
   # of vector of all new infections
-  sum_male_inc_vec <- sum(df$si_flow_m, na.rm = TRUE)
+  sum_male_inc_vec <- sum(df$se_flow_m, na.rm = TRUE)
   expect_equal(sum_male_inc_vec, sum_inc_vec)
 })
 
@@ -180,7 +186,10 @@ condom_no_trans_params <- condom_no_eff_params <-
       act_rate_vec = 2,
       sympt_prob_m = 0.4,
       sympt_prob_f = 0.6,
-      sympt_inf_modifier = 1
+      sympt_inf_modifier = 1,
+      mean_incubation_period = 7, # PLACEHOLDER
+      mean_infection_duration_m = 150, # PLACEHOLDER
+      mean_infection_duration_f = 300 # PLACEHOLDER
     )
 
 ## Initial Conditions
@@ -210,7 +219,7 @@ test_that("when condom use & effectiveness = 1, we get no transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_equal(sum_inc_vec, 0)
 })
 
@@ -227,7 +236,7 @@ test_that("with condom use = 1 but effectiveness = 0, we get transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -244,7 +253,7 @@ test_that("with condom use = 0 but effectiveness = 1, we get transmissions", {
     expect_no_error()
 
   df <- as.data.frame(sim)
-  sum_inc_vec <- sum(df$si_flow, na.rm = TRUE)
+  sum_inc_vec <- sum(df$se_flow, na.rm = TRUE)
   expect_gt(sum_inc_vec, 0)
 })
 
@@ -297,7 +306,10 @@ sympt_mod_invalid_params <- sympt_mod_invalid_params2 <- list(
   cond_prob_vec = 0,
   cond_eff = 0,
   sympt_prob_m = 0.4,
-  sympt_prob_f = 0.6
+  sympt_prob_f = 0.6,
+  mean_incubation_period = 7, # PLACEHOLDER
+  mean_infection_duration_m = 150, # PLACEHOLDER
+  mean_infection_duration_f = 300 # PLACEHOLDER
 )
 
 ## Initial Conditions

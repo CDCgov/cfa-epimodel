@@ -4,6 +4,7 @@
 #' time step, storing the counts in the epidemiological summary statistics list.
 #'
 #' @inheritParams vitals
+#' @importFrom EpiModel set_epi
 #'
 #' @export
 

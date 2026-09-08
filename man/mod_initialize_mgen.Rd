@@ -16,13 +16,15 @@ of class \code{netest} or a list of such objects. If
 multiple networks are used, the node sets (including network size
 and nodal attributes) are assumed to be the same for all networks.}
 
-\item{param}{An \code{EpiModel} object of class \code{\link{EpiModel::param.net}}.}
+\item{param}{An \code{EpiModel} object of class param.net.}
 
-\item{init}{An \code{EpiModel} object of class \code{\link{EpiModel::init.net}}.}
+\item{init}{An \code{EpiModel} object of class init.net.}
 
-\item{control}{An \code{EpiModel} object of class \code{\link{EpiModel::control.net}}.}
+\item{control}{An \code{EpiModel} object of class control.net.}
 
 \item{s}{Simulation number, used for restarting dependent simulations.}
+
+\item{dat}{The main \code{dat} object containing network and epidemic information.}
 }
 \value{
 A \code{netsim_dat} class main data object.

@@ -7,6 +7,7 @@
 #'        \code{\link{EpiModel::netsim}}.
 #' @param at Current time step.
 #'
+#' @importFrom EpiModel get_attr set_attr set_epi get_param get_attr_list append_core_attr append_attr
 #' @name vitals
 #' @rdname vitals
 #' @export
@@ -88,6 +89,7 @@ mod_departures_mgen <- function(dat, at) {
 
 # Arrivals Module ----------------------------------------------------
 #' @rdname vitals
+#' @importFrom EpiModel get_attr set_attr get_param get_epi set_epi apportion_lr
 #' @export
 mod_arrivals_mgen <- function(dat, at) {
   ## Parameters

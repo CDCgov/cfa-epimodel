@@ -5,6 +5,8 @@
 #'
 #' @inheritParams vitals
 #'
+#' @importFrom EpiModel get_attr set_attr set_epi
+#'
 #' @export
 mod_ei_mgen <- function(dat, at) {
   # Get attributes

@@ -28,4 +28,4 @@ Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 LazyData: true
 LazyDataCompression: xz
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
