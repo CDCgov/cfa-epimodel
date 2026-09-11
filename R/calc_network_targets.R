@@ -219,7 +219,6 @@ calc_targets <- function(
       attr_name,
       edges,
       level,
-      nf_counts,
       attr_squared
     )
   }
@@ -459,7 +458,6 @@ calc_cross_network <- function(params, rel, edges) {
 }
 
 #' @rdname targets
-#' @param nf_counts output from calc_joint_nodefactor()
 #' @param edges output from calc_edges()
 #' @export
 calc_nodecov_age <- function(
@@ -467,7 +465,7 @@ calc_nodecov_age <- function(
   rel,
   attr_name,
   edges,
-  attr_squared
+  attr_squared = FALSE
 ) {
   # get mean of value for attr(i) + attr(j) from data
   if (attr_squared) {

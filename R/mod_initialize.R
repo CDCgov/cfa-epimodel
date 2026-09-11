@@ -11,9 +11,9 @@
 #'        \code{control$start > 1}, an object of class \code{netsim}. When
 #'        multiple networks are used, the node sets (including network size
 #'        and nodal attributes) are assumed to be the same for all networks.
-#' @param param An \code{EpiModel} object of class \code{\link{param.net}}.
-#' @param init An \code{EpiModel} object of class \code{\link{init.net}}.
-#' @param control An \code{EpiModel} object of class \code{\link{control.net}}.
+#' @param param An \code{EpiModel} object of class param.net.
+#' @param init An \code{EpiModel} object of class init.net.
+#' @param control An \code{EpiModel} object of class control.net.
 #' @param s Simulation number, used for restarting dependent simulations.
 #' @details When re-initializing a simulation, the \code{netsim} object passed
 #'          to \code{initialize.net} must contain the elements \code{param},
@@ -21,14 +21,11 @@
 #'
 #' @return A \code{netsim_dat} class main data object.
 #'
-#' @importFrom EpiModel get_attr set_attr get_epi set_epi
-#' get_param append_core_attr append_attr
-#' get_edgelist init_status.net create_dat_object
-#' init_nets sim_nets_t1 summary_nets
-#' padded_vector get_control get_attr_prop set_param
+#' @importFrom EpiModel create_dat_object init_nets get_attr_prop sim_nets_t1 summary_nets get_control padded_vector set_param
+#'
 #' @export
 
-mod_sti_initialize <- function(x, param, init, control, s) {
+mod_initialize_mgen <- function(x, param, init, control, s) {
   if (control$start == 1) {
     dat <- create_dat_object(param, init, control)
     dat <- init_nets(dat, x)
@@ -37,7 +34,11 @@ mod_sti_initialize <- function(x, param, init, control, s) {
     }
     dat <- sim_nets_t1(dat)
     dat <- summary_nets(dat, at = 1L)
-    dat <- init_mgen_status(dat)
+
+    # THIS IS THE ONLY CUSTOM CODE IN THIS FUNCTION, ALL ELSE IS FROM EpiModel::initialize.net
+    dat <- init_mgen_status(dat) # initialize infection status and related attributes for M. genitalium
+    # END OF CUSTOM CODE
+
     dat <- do.call(control[["prevalence.FUN"]], list(dat, at = 1))
   } else if (control$start > 1) {
     required_names <- c("param", "nwparam", "epi", "run", "coef.form", "num.nw")
@@ -87,13 +88,13 @@ mod_sti_initialize <- function(x, param, init, control, s) {
 
 #' @title Initialize Infection Status
 #' @description Initialize infection status and related attributes for STI
-#' transmission models. This function is called within \code{mod_sti_initialize}
+#' transmission models. This function is called within \code{mod_initialize_mgen}
 #' to set up the initial infection status of the population based on the number
 #' of initial infections specified in the \code{init} object.
-#' @inheritParams mod_sti_initialize
+#' @param dat The main \code{dat} object containing network and epidemic information.
 #' @return A modified \code{dat} object with initialized infections
-#' @rdname mod_sti_initialize
-#' @importFrom EpiModel get_init
+#' @rdname mod_initialize_mgen
+#' @importFrom EpiModel get_attr set_attr set_epi get_param get_control get_init
 #' @export
 init_mgen_status <- function(dat) {
   num <- sum(get_attr(dat, "active") == 1)
@@ -103,7 +104,7 @@ init_mgen_status <- function(dat) {
 
   # Defaults
   status <- rep("s", num)
-  inf_time <- sympt <- rec_time <- rep(NA, num)
+  inf_time <- sympt <- rec_time <- ei_time <- rep(NA, num)
 
   # Get initial infs
   ids_inf <- sample(num, i_num)
@@ -119,18 +120,60 @@ init_mgen_status <- function(dat) {
     sympt_prob_f,
     sympt_prob_m
   )
-  sympt_vec <- which(rbinom(length(ids_inf), 1, sympt_prob_vec) == 1)
-  ids_sympt <- ids_inf[sympt_vec]
+  ids_sympt <- get_successful_ids_binom(ids_inf, sympt_prob_vec)
   ids_asympt <- setdiff(ids_inf, ids_sympt)
   sympt[ids_sympt] <- 1
   sympt[ids_asympt] <- 0
 
-  # Set attrs
+  # Calculate incubation period and infection duration for newly infected nodes
+  #mean_incubation_period <- get_param(dat, "mean_incubation_period")
+  mean_inf_dur_m <- get_param(dat, "mean_infection_duration_m")
+  mean_inf_dur_f <- get_param(dat, "mean_infection_duration_f")
 
+  #incubation_period <- ceiling(rnorm(
+  #  i_num,
+  #  mean = mean_incubation_period,
+  #  sd = mean_incubation_period / 2
+  #))
+
+  inf_dur_vec <- ifelse(
+    female[ids_inf] == 1,
+    ceiling(rnorm(i_num, mean = mean_inf_dur_f, sd = mean_inf_dur_f / 2)),
+    ceiling(rnorm(i_num, mean = mean_inf_dur_m, sd = mean_inf_dur_m / 2))
+  )
+
+  #ei_time[ids_inf] <- incubation_period
+  rec_time[ids_inf] <- inf_dur_vec
+
+  # Set attrs
   dat <- set_attr(dat, "status", status)
   dat <- set_attr(dat, "inf_time", inf_time)
   dat <- set_attr(dat, "sympt", sympt)
   dat <- set_attr(dat, "rec_time", rec_time)
+  dat <- set_attr(dat, "ei_time", ei_time)
+  # THESE WILL NEED TO Be assigned for infected nodes ONCE AMR STATUS INCLUDED IN INITIALIZATION
+  # initialize resistance status attributes (0 = susceptible, 1 = resistant, NA = not infected)
+  dat <- set_attr(dat, "amr_q", rep(NA, num))
+  dat <- set_attr(dat, "amr_m", rep(NA, num))
+  dat <- set_attr(dat, "curr_tx", rep(NA, num))
+  dat <- set_attr(dat, "tx_end_day", rep(NA, num))
+  dat <- set_attr(dat, "tx_success", rep(NA, num))
+
+  # Optional, save dat object for testing
+  saveout <- get_control(dat, "save_dat", override.null.error = TRUE)
+  if (is.null(saveout)) {
+    saveout <- FALSE
+  }
+  if (saveout) {
+    folder_loc <- get_control(dat, 'save_dat_folder')
+    saveRDS(
+      dat,
+      file.path(
+        folder_loc,
+        paste0("dat.rds")
+      )
+    )
+  }
 
   # Return dat
   dat

@@ -5,12 +5,11 @@
 #' for symptomatic persons
 #'
 #' @inheritParams vitals
-#' @importFrom EpiModel get_attr set_attr set_epi get_param
-#' set_transmat discord_edgelist
+#' @importFrom EpiModel get_attr set_attr set_epi discord_edgelist set_transmat
 #'
 #' @export
 
-mod_infection <- function(dat, at) {
+mod_infection_mgen <- function(dat, at) {
   # Notes
   ## NEED TESTS FOR SYMPTOMATIC MODIFIERS
   ## needs AMR tracker implementation (to add when AMR module is done)
@@ -168,38 +167,24 @@ mod_infection <- function(dat, at) {
       # Set new infections attribute vectors
       ## status, infection time
       ids_new_inf <- unique(del$sus)
-      status[ids_new_inf] <- "i"
-      dat <- set_attr(dat, "status", status)
-      inf_time[ids_new_inf] <- at
-      dat <- set_attr(dat, "inf_time", inf_time)
-      ## symptomatic status
-      sympt_prob_vec <- ifelse(
-        female[ids_new_inf] == 1,
-        sympt_prob_f,
-        sympt_prob_m
-      )
-      sympt_vec <- which(rbinom(length(ids_new_inf), 1, sympt_prob_vec) == 1)
-      ids_sympt <- ids_new_inf[sympt_vec]
-      ids_asympt <- setdiff(ids_new_inf, ids_sympt)
-      sympt[ids_sympt] <- 1
-      sympt[ids_asympt] <- 0
-      dat <- set_attr(dat, "sympt", sympt)
 
-      # Count new infections
-      female_attrs <- unique(female)
-      if (!all(female_attrs %in% c(0, 1))) {
-        stop(
-          "Female attribute must be coded as 0/1 only,
-          which is required for sex-stratified epi slots.",
-          call. = FALSE
-        )
+      if (length(ids_new_inf) > 0) {
+        dat <- set_infection_attrs_mgen(dat, at, ids_new_inf)
+
+        # Count new infections
+        female_attrs <- unique(female)
+        if (!all(female_attrs %in% c(0, 1))) {
+          stop(
+            "Female attribute must be coded as 0/1 only,
+            which is required for sex-stratified epi slots.",
+            call. = FALSE
+          )
+        }
+        ## Calculate new infections among each sex explicitly by code:
+        n_inf <- sum(female[ids_new_inf] == 0, na.rm = TRUE)
+        n_inf_g2 <- sum(female[ids_new_inf] == 1, na.rm = TRUE)
+        tot_inf <- n_inf + n_inf_g2
       }
-      ## Calculate new infections among each sex explicitly by code:
-      ## si.flow.female0 corresponds to new infs among female == 0
-      ## si.flow.female1 corresponds to new infs among female == 1
-      n_inf <- sum(female[ids_new_inf] == 0, na.rm = TRUE)
-      n_inf_g2 <- sum(female[ids_new_inf] == 1, na.rm = TRUE)
-      tot_inf <- n_inf + n_inf_g2
     } # end some discordant edges condition
   } # end some active discordant nodes condition
 
@@ -211,10 +196,90 @@ mod_infection <- function(dat, at) {
   }
 
   ## Save incidence vector
-  dat <- set_epi(dat, "si.flow", at, tot_inf)
-  dat <- set_epi(dat, "si.flow.female0", at, n_inf)
-  dat <- set_epi(dat, "si.flow.female1", at, n_inf_g2)
+  dat <- set_epi(dat, "se_flow", at, tot_inf)
+  dat <- set_epi(dat, "se_flow_m", at, n_inf)
+  dat <- set_epi(dat, "se_flow_f", at, n_inf_g2)
 
   # Return
+  dat
+}
+
+#' @title Assigns Infection-Related Attributes for Newly Exposed Individuals (M. genitalium)
+#'
+#' @description Assigns symptomatic status, calculates the time of transition from exposed
+#' to infected based on the incubation period, calculates time of natural recovery.
+#' This module should be run after the infection module in the same time step.
+#' Note: This module assumes a normal distribution for the incubation period and infection duration,
+#' with the mean specified in the parameters and a standard deviation equal to half of the mean.
+#'
+#' @inheritParams vitals
+#' @param ids_new_e A vector of IDs corresponding to newly exposed individuals.
+#'
+#' @importFrom stats rnorm
+#' @importFrom EpiModel get_attr set_attr get_param
+#' @export
+set_infection_attrs_mgen <- function(dat, at, ids_new_e) {
+  # Proceed
+  # Get attributes
+  active <- get_attr(dat, "active")
+  female <- get_attr(dat, "female")
+  status <- get_attr(dat, "status")
+  sympt <- get_attr(dat, "sympt")
+  inf_time <- get_attr(dat, "inf_time")
+  ei_time <- get_attr(dat, "ei_time")
+  rec_time <- get_attr(dat, "rec_time")
+
+  # Get parameters
+  sympt_prob_m <- get_param(dat, "sympt_prob_m")
+  sympt_prob_f <- get_param(dat, "sympt_prob_f")
+  mean_incubation_period <- get_param(dat, "mean_incubation_period")
+  mean_inf_dur_m <- get_param(dat, "mean_infection_duration_m")
+  mean_inf_dur_f <- get_param(dat, "mean_infection_duration_f")
+
+  n_new_e <- length(ids_new_e)
+
+  # Assign infection status and time to newly exposed nodes
+  status[ids_new_e] <- "e"
+  inf_time[ids_new_e] <- at
+
+  dat <- set_attr(dat, "status", status)
+  dat <- set_attr(dat, "inf_time", inf_time)
+
+  ## Assign symptomatic status for newly exposed nodes based on sex-specific probabilities
+  sympt_prob_vec <- ifelse(
+    female[ids_new_e] == 1,
+    sympt_prob_f,
+    sympt_prob_m
+  )
+  sympt_ids <- get_successful_ids_binom(ids_new_e, sympt_prob_vec)
+  asympt_ids <- setdiff(ids_new_e, sympt_ids)
+
+  ## Calculate incubation period for each newly exposed node
+  ## (not sex-specific, but could be modified to be if desired)
+  incubation_period <- ceiling(rnorm(
+    n_new_e,
+    mean = mean_incubation_period,
+    sd = mean_incubation_period / 2
+  ))
+
+  ## Calculate infection duration for newly infected nodes
+  ## based on sex-specific means
+  inf_dur_vec <- ifelse(
+    female[ids_new_e] == 1,
+    ceiling(rnorm(n_new_e, mean = mean_inf_dur_f, sd = mean_inf_dur_f / 2)),
+    ceiling(rnorm(n_new_e, mean = mean_inf_dur_m, sd = mean_inf_dur_m / 2))
+  )
+
+  ## Update sympt, ei_time, and rec_time attributes
+  sympt[sympt_ids] <- 1
+  sympt[asympt_ids] <- 0
+  ei_time[ids_new_e] <- at + incubation_period
+  rec_time[ids_new_e] <- at + inf_dur_vec
+
+  dat <- set_attr(dat, "ei_time", ei_time)
+  dat <- set_attr(dat, "sympt", sympt)
+  dat <- set_attr(dat, "rec_time", rec_time)
+
+  # Return dat
   dat
 }

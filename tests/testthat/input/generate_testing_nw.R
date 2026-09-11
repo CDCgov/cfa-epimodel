@@ -6,7 +6,7 @@ age_min <- 15
 age_max <- 50
 age_vec <- seq(age_min, age_max, length.out = size)
 age_group_vec <- dplyr::case_when(
-  age_vec < 50 & age_vec >= 45 ~ 7,
+  age_vec <= 50 & age_vec >= 45 ~ 7,
   age_vec < 45 & age_vec >= 40 ~ 6,
   age_vec < 40 & age_vec >= 35 ~ 5,
   age_vec < 35 & age_vec >= 30 ~ 4,

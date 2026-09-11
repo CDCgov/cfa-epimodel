@@ -25,7 +25,7 @@ calc_concurrent(params, rel, num)
 
 calc_cross_network(params, rel, edges)
 
-calc_nodecov_age(params, rel, attr_name, edges, attr_squared)
+calc_nodecov_age(params, rel, attr_name, edges, attr_squared = FALSE)
 
 check_targets(edges, final_targets, count_type, threshold = 0.01)
 
@@ -67,8 +67,6 @@ calulated target is allowed within (+/- threshold)}
 
 \item{nw}{the network object outputted from "generate_init_network"
 (usually already in environment during workflow)}
-
-\item{nf_counts}{output from calc_joint_nodefactor()}
 }
 \description{
 Small helper functions used as part of calc_targets()

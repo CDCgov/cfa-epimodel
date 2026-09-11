@@ -1,4 +1,2 @@
 [lint]
 default-exclude = true
-extend-select = ["assignment"]
-assignment = "<-"

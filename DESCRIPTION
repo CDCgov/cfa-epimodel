@@ -1,7 +1,7 @@
 Package: epimodelcfa
 Type: Package
 Version: 0.1.0.0
-Title: Bespoke extentions to the EpiModel package for agent-based epidemic modeling using dynamic networks
+Title: Bespoke Extensions to the EpiModel Package for Agent-Based Epidemic Modeling using Dynamic Networks
 Description: Disease and project-specific modules for extending EpiModel functionality, plus additional functions for analysis and visualization.
 Author: Emily Pollock, PhD <ruu7@cdc.gov>
 Maintainer: Emily Pollock, PhD <ruu7@cdc.gov>
@@ -21,13 +21,11 @@ Imports:
     stats,
     viridis
 Suggests:
-    quarto,
     testthat (>= 3.0.0),
     withr
-VignetteBuilder: quarto
-RoxygenNote: 7.3.3
 Encoding: UTF-8
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 LazyData: true
 LazyDataCompression: xz
+Config/roxygen2/version: 8.1.0

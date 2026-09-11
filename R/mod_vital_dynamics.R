@@ -4,18 +4,14 @@
 #'
 #' @param dat Main \code{netsim_dat} object containing a \code{networkDynamic}
 #'        object and other initialization information passed from
-#'        \code{\link{netsim}}.
+#'        \code{\link{EpiModel::netsim}}.
 #' @param at Current time step.
 #'
-#' @importFrom EpiModel get_attr set_attr get_epi set_epi get_param
-#' append_core_attr append_attr get_edgelist apportion_lr
-#'
+#' @importFrom EpiModel get_attr set_attr set_epi get_param get_attr_list append_core_attr append_attr
 #' @name vitals
-NULL
-
 #' @rdname vitals
 #' @export
-mod_aging <- function(dat, at) {
+mod_aging_mgen <- function(dat, at) {
   # Calc Updated Age Attributes
   age <- get_attr(dat, "age")
   age_group <- get_attr(dat, "age_group")
@@ -23,19 +19,26 @@ mod_aging <- function(dat, at) {
 
   # Update age and age_group vectors
   age <- age + (1 / units)
-  age_group <- dplyr::case_when(
-    age >= 45 ~ 7,
-    age < 45 & age >= 40 ~ 6,
-    age < 40 & age >= 35 ~ 5,
-    age < 35 & age >= 30 ~ 4,
-    age < 30 & age >= 25 ~ 3,
-    age < 25 & age >= 19 ~ 2,
-    age < 19 ~ 1
+  splits <- get_param(dat, "age_group_splits")
+  splits_epi <- get_param(dat, "age_group_splits_epi")
+
+  age_group <- cut(
+    age,
+    breaks = c(-Inf, splits, Inf),
+    labels = FALSE,
+    right = FALSE
+  )
+  age_group_epi <- cut(
+    age,
+    breaks = c(-Inf, splits_epi, Inf),
+    labels = FALSE,
+    right = FALSE
   )
 
   # Update Attributes
   dat <- set_attr(dat, "age", age)
   dat <- set_attr(dat, "age_group", age_group)
+  dat <- set_attr(dat, "age_group_epi", age_group_epi)
 
   ## Summary statistics ##
   dat <- set_epi(dat, "meanAge", at, mean(age, na.rm = TRUE))
@@ -47,7 +50,7 @@ mod_aging <- function(dat, at) {
 # Departures Module ----------------------------------------------------
 #' @rdname vitals
 #' @export
-mod_departures <- function(dat, at) {
+mod_departures_mgen <- function(dat, at) {
   ## Attributes
   active <- get_attr(dat, "active")
   exitTime <- get_attr(dat, "exitTime")
@@ -86,16 +89,23 @@ mod_departures <- function(dat, at) {
 
 # Arrivals Module ----------------------------------------------------
 #' @rdname vitals
+#' @importFrom EpiModel get_attr set_attr get_param get_epi set_epi apportion_lr
 #' @export
-mod_arrivals <- function(dat, at) {
+mod_arrivals_mgen <- function(dat, at) {
   ## Parameters
   n <- sum(get_attr(dat, "active") == 1)
   aType <- get_param(dat, "arrivalType")
-  female_prob <- get_param(dat, "entry_female_prob")
-  race_probs <- get_param(dat, "entry_race_probs")
-  race_names <- get_param(dat, "entry_race_names")
-  entry_age <- get_param(dat, "entry_age")
 
+  ## Demographic attributes for new arrivals
+  female_values <- get_param(dat, "entry_female_values")
+  female_probs <- get_param(dat, "entry_female_probs")
+  race_values <- get_param(dat, "entry_race_values")
+  race_probs <- get_param(dat, "entry_race_probs")
+  entry_age <- get_param(dat, "entry_age")
+  entry_age_group <- 1
+  entry_age_group_epi <- 1
+
+  ## Set up for new arrivals
   nArrivals <- 0
 
   if (!aType %in% c("rate", "departures")) {
@@ -117,45 +127,71 @@ mod_arrivals <- function(dat, at) {
   if (nArrivals > 0) {
     ## Determine sex, race
     if (nArrivals <= 5) {
-      # for small nArrivals, sample individually
-      # 5 is arbitrary cutoff but seems to work well in testing
+      ## for small nArrivals, sample individually
+      ## 5 is arbitrary cutoff but seems to work well in testing
       arrival_sex <- sample(
-        c(0, 1),
+        female_values,
         nArrivals,
-        prob = c(1 - female_prob, female_prob),
+        prob = female_probs,
         replace = TRUE
       )
       arrival_race <- sample(
-        race_names,
+        race_values,
         nArrivals,
         prob = race_probs,
         replace = TRUE
       )
     } else {
-      # use base EpiModel apportion_lr function if nArrivals > 5
+      ## use base EpiModel apportion_lr function if nArrivals > 5
       arrival_sex <- apportion_lr(
         nArrivals,
-        c(0, 1),
-        c(1 - female_prob, female_prob)
+        female_values,
+        female_probs
       )
-      arrival_race <- apportion_lr(nArrivals, race_names, race_probs)
+      arrival_race <- apportion_lr(nArrivals, race_values, race_probs)
     }
 
+    ## Record length of attr vectors before new arrivals
+    l <- length(get_attr_list(dat)[[1]])
+
     ## Update attributes for new arrivals
+    ## EpiModel default core attrs: active, entryTime, exitTime, unique_id
     dat <- append_core_attr(dat, at, nArrivals)
+    ## Custom attrs
     dat <- append_attr(dat, "status", "s", nArrivals)
-    dat <- append_attr(dat, "inf_time", NA, nArrivals)
-    dat <- append_attr(dat, "rec_time", NA, nArrivals)
-    dat <- append_attr(dat, "sympt", NA, nArrivals)
+
+    ### Required attrs for network formation: age, age_group, female, race
     dat <- append_attr(dat, "age", entry_age, nArrivals)
-    dat <- append_attr(dat, "age_group", 1, nArrivals)
+    dat <- append_attr(dat, "age_group", entry_age_group, nArrivals)
+    dat <- append_attr(dat, "age_group_epi", entry_age_group_epi, nArrivals)
     dat <- append_attr(dat, "race", arrival_race, nArrivals)
     dat <- append_attr(dat, "female", arrival_sex, nArrivals)
+
+    # Assign all other attrs NA (e.g. inf_time, rec_time, sympt, etc)
+    # Attrs that need assignment have length equal to l,
+    # the length of attr vectors before new arrivals
+    attr_list <- get_attr_list(dat)
+    attr_names <- names(attr_list)
+    for (attr_name in attr_names) {
+      if (length(attr_list[[attr_name]]) == l) {
+        dat <- append_attr(dat, attr_name, NA, nArrivals)
+      }
+    }
+
+    # Check that all attr vectors are now same length by pulling attr_list
+    # again and checking lengths
+    attr_lengths <- lengths(get_attr_list(dat))
+    if (length(unique(attr_lengths)) != 1) {
+      stop(paste0(
+        "Not all attr vectors are same length after new arrivals at time ",
+        at
+      ))
+    }
   }
 
   ## Summary statistics
   dat <- set_epi(dat, "a.flow", at, nArrivals)
 
-  # Return
+  ## Return
   dat
 }
