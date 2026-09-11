@@ -17,5 +17,5 @@ object and other initialization information passed from
 This module handles the clinical aspects of M. genitalium infection,
 including screening, testing, diagnosis, and treatment outcomes
 depending on the specified scenario. If treatment is sucessful, patients are flagged
-for recovery but tracking occurs in the recovery module.
+for recovery but tracking and attribute updating occurs in the recovery module.
 }

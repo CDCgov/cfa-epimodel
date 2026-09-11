@@ -3,7 +3,7 @@
 #' @description This module handles the clinical aspects of M. genitalium infection,
 #' including screening, testing, diagnosis, and treatment outcomes
 #' depending on the specified scenario. If treatment is sucessful, patients are flagged
-#' for recovery but tracking occurs in the recovery module.
+#' for recovery but tracking and attribute updating occurs in the recovery module.
 #'
 #' @inheritParams vitals
 #'
@@ -11,15 +11,26 @@
 
 mod_clinical_mgen <- function(dat, at) {
   # Get nodal attributes
+  # NOTE: these attributes are used to determine clinical eligibility at beginning of each time step
+  # DO NOT modify these attributes directly within this module, use helper functions instead
   active <- get_attr(dat, "active")
   female <- get_attr(dat, "female") # biological sex, where 1 = female and 0 = male
   status <- get_attr(dat, "status") # infection status (s = susceptible, i = infected, e = exposed)
   sympt <- get_attr(dat, "sympt") # symptom status (1 = symptomatic, 0 = asymptomatic)
   amr_m <- get_attr(dat, "amr_m") # macrolide resistance status, where 0 = susceptible and 1 = resistant
   amr_q <- get_attr(dat, "amr_q") # quinolone resistance status, where 0 = susceptible and 1 = resistant
+  seek_tx_day <- get_attr(dat, "seek_tx_day")
   curr_tx <- get_attr(dat, "curr_tx") # current treatment status (NA = no treatment, 1 = doxycycline, 2 = moxifloxacin, 3 = azithromycin, 4 = other)
   tx_end_day <- get_attr(dat, "tx_end_day") # day of treatment evaluation (NA if not treated)
   tx_success <- get_attr(dat, "tx_success") # treatment success status (NA = not treated, 1 = successful & will recover this time step)
+  tx_return_day <- get_attr(dat, "tx_return_day") # day the patient is expected to return to clinic after treatment failure
+
+  # Get scenario number for additional parameters and clinical flow logic
+  scenario <- get_param(dat, "scenario")
+  mean_days_to_clinic_visit <- get_param(
+    dat,
+    "mean_days_to_clinic_visit"
+  )
 
   # Establish empty vectors for clinical flow logic and tracking of clinical outcomes
   # These will be updated at each time step regardless of scenario, assign default vals here
@@ -37,59 +48,49 @@ mod_clinical_mgen <- function(dat, at) {
   n_tx_other_m <- 0 # n infected who begin treatment with other, male
   n_tx_other_f <- 0 # n infected who begin treatment with other, female
 
-  # Get scenario number for additional parameters and clinical flow logic
-  scenario <- get_param(dat, "scenario")
-
   if (scenario == 1) {
     # Scenario 1: Baseline scenario with standard treatment
     # No asymptomatic screening, only symptomatic individuals seek care
     # Given course of doxycycline treatment
     # Most infections fail to clear and may persist with or without AMR
     # No resistance-guided therapy
-    # NAAT test for M.gen only upon failure of doxycycline
-    # If NAAT confirms M.gen infection, treat with moxifloxacin
+    # Assume that GC/CT test usually administered w/ concurrent doxy tx is negative
+    # If doxy fails to treat MG, proceed to moxifloxacin
     # Infections either clear or persist w/ AMR after moxifloxacin treatment
     # Men and women experience same clinical flow
-    p_seek_care_m <- get_param(dat, "p_seek_care_m")
-    p_seek_care_f <- get_param(dat, "p_seek_care_f")
-    duration_doxy_tx <- get_param(dat, "duration_doxy_tx")
-    duration_moxi_tx <- get_param(dat, "duration_moxi_tx")
-    naat_sensitivity <- get_param(dat, "naat_sensitivity")
     p_doxy_success <- get_param(dat, "p_doxy_success")
+    p_doxy_failure <- 1 - p_doxy_success
+    p_moxi_success <- get_param(dat, "p_moxi_success")
+    p_moxi_failure <- 1 - p_moxi_success
+    p_thirdline_success <- get_param(dat, "p_thirdline_success")
+    p_thirdline_failure <- 1 - p_thirdline_success
 
     # Step 1: New Patients Seek Care and Get Treated with Doxycycline ---------
     ## Get ids of symptomatic infected individuals eligible for
     ## first-line treatment (doxycycline)
-    ids_doxy_elig_m <- which(
+    ids_doxy_elig <- which(
       active == 1 &
-        female == 0 &
-        status == "i" &
         sympt == 1 &
-        is.na(curr_tx) &
-        is.na(tx_end_day)
-    )
-    ids_doxy_elig_f <- which(
-      active == 1 &
-        female == 1 &
         status == "i" &
-        sympt == 1 &
         is.na(curr_tx) &
-        is.na(tx_end_day)
+        seek_tx_day == at
     )
-    ## Determine which eligible individuals seek care and receive doxycycline treatment
-    ids_tx_doxy_m <- get_successful_ids_binom(ids_doxy_elig_m, p_seek_care_m)
-    ids_tx_doxy_f <- get_successful_ids_binom(ids_doxy_elig_f, p_seek_care_f)
-    all_tx_doxy_ids <- c(ids_tx_doxy_m, ids_tx_doxy_f)
 
     ## Update treatment status and day of treatment evaluation for those treated with doxycycline
-    curr_tx[all_tx_doxy_ids] <- 1 # 1 = doxycycline
-    tx_end_day[all_tx_doxy_ids] <- at + duration_doxy_tx
+    dat <- update_attrs_for_new_treatment(
+      dat,
+      at,
+      ids_doxy_elig,
+      "doxy"
+    )
 
     ## Update tracker for individuals who begin doxycycline treatment
-    n_tx_doxy_m <- length(ids_tx_doxy_m)
-    n_tx_doxy_f <- length(ids_tx_doxy_f)
+    ids_doxy_elig_m <- ids_doxy_elig[female[ids_doxy_elig] == 0]
+    ids_doxy_elig_f <- ids_doxy_elig[female[ids_doxy_elig] == 1]
+    n_tx_doxy_m <- length(ids_doxy_elig_m)
+    n_tx_doxy_f <- length(ids_doxy_elig_f)
 
-    # Step 2 - Sucess/Failure of Doxycycline Treatment ---------
+    # Step 2 - Success/Failure of Doxycycline Treatment ------------------------------
     ## Get ids of those treated with doxycycline who finish tx course today
     ids_doxy_eval <- which(
       active == 1 &
@@ -101,59 +102,45 @@ mod_clinical_mgen <- function(dat, at) {
     ids_doxy_failure <- get_successful_ids_binom(ids_doxy_eval, p_doxy_failure)
     ids_doxy_success <- setdiff(ids_doxy_eval, ids_doxy_failure)
 
-    ## Clear infection for those with successful doxycycline treatment
-    status[ids_doxy_success] <- rec_state
-    sympt[ids_doxy_success] <- NA # reset symptom status upon recovery
-    rec_time[ids_doxy_success] <- at
-    inf_time[ids_doxy_success] <- NA
-    curr_tx[ids_doxy_success] <- NA
-    tx_end_day[ids_doxy_success] <- NA
+    ## Flag outcome of doxycycline treatment
+    dat <- flag_ids_for_recovery(dat, at, ids_doxy_success)
+    dat <- flag_ids_for_treatment_failure(dat, at, ids_doxy_failure)
 
-    ## Add recovery counts to tracker
-    n_recovered_m <- n_recovered_m + sum(female[ids_doxy_success] == 0)
-    n_recovered_f <- n_recovered_f + sum(female[ids_doxy_success] == 1)
+    ## Calculate return day for those who failed doxycycline treatment
+    dat <- set_event_time_rnorm(
+      dat,
+      at,
+      ids_doxy_failure,
+      "tx_return_day",
+      mean_days_to_clinic_visit
+    )
 
-    # Step 3 - NAAT for Doxycycline Failures & Moxi tx---------
-    ## Get ids of those with doxycycline failure who get NAAT test
-    ids_naat_elig_m <- which(
+    # Step 3 - Moxifloxacin Treatment for Doxycycline Failures ---------
+    ## Get ids of those with doxycycline failure returning to clinic
+    ids_moxi_elig <- which(
       active == 1 &
         sympt == 1 &
         status == "i" &
-        curr_tx == 1 &
-        female == 0 &
-        tx_end_day < at # allow for some delay in care-seeking after treatment failure
+        curr_tx == 1 & # doxy is current treatment
+        tx_success == 0 & # failed doxy
+        tx_return_day == at # only consider those who are due to return today
     )
 
-    ids_naat_elig_f <- which(
-      active == 1 &
-        sympt == 1 &
-        status == "i" &
-        curr_tx == 1 &
-        female == 1 &
-        tx_end_day < at # allow for some delay in care-seeking after treatment failure
+    ## Update treatment status and day of treatment evaluation for those treated with moxifloxacin
+    dat <- update_attrs_for_new_treatment(
+      dat,
+      at,
+      ids_moxi_elig,
+      "moxi"
     )
-
-    ## Determine which eligible ids return and have sucessful NAAT test
-    ## This setup means NAAT failures remain infected and may return for another test in future
-    ids_naat_pos_m <- get_successful_ids_binom(
-      ids_naat_elig_m,
-      p_seek_care_m * naat_sensitivity
-    )
-    ids_naat_pos_f <- get_successful_ids_binom(
-      ids_naat_elig_f,
-      p_seek_care_f * naat_sensitivity
-    )
-    all_naat_pos_ids <- c(ids_naat_pos_m, ids_naat_pos_f)
-
-    ## Update attributes & tracker value to reflect moxifloxacin treatment
-    curr_tx[all_naat_pos_ids] <- 2 # 2 = moxifloxacin
-    tx_end_day[all_naat_pos_ids] <- at + duration_moxi_tx
 
     ## Update tracker for individuals who begin moxifloxacin treatment
-    n_tx_moxi_m <- length(ids_naat_pos_m)
-    n_tx_moxi_f <- length(ids_naat_pos_f)
+    ids_moxi_elig_m <- ids_moxi_elig[female[ids_moxi_elig] == 0]
+    ids_moxi_elig_f <- ids_moxi_elig[female[ids_moxi_elig] == 1]
+    n_tx_moxi_m <- length(ids_moxi_elig_m)
+    n_tx_moxi_f <- length(ids_moxi_elig_f)
 
-    # Step 4 - Sucess/Failure of Moxifloxacin Treatment ---------
+    # Step 4 - Sucess/Failure of Moxifloxacin Treatment -----------------------------
     ## Get ids of those treated with moxifloxacin who finish tx course today
     ids_moxi_eval <- which(
       active == 1 &
@@ -162,24 +149,28 @@ mod_clinical_mgen <- function(dat, at) {
         curr_tx == 2 &
         tx_end_day == at
     )
+
     ids_moxi_failure <- get_successful_ids_binom(ids_moxi_eval, p_moxi_failure)
     ids_moxi_success <- setdiff(ids_moxi_eval, ids_moxi_failure)
 
-    ## Clear infection for those with successful moxifloxacin treatment
-    status[ids_moxi_success] <- rec_state
-    sympt[ids_moxi_success] <- NA # reset symptom status upon recovery
-    rec_time[ids_moxi_success] <- at
-    inf_time[ids_moxi_success] <- NA
-    curr_tx[ids_moxi_success] <- NA
-    tx_end_day[ids_moxi_success] <- NA
+    ## Flag outcome of moxifloxacin treatment
+    dat <- flag_ids_for_recovery(dat, at, ids_moxi_success)
+    dat <- flag_ids_for_treatment_failure(dat, at, ids_moxi_failure)
 
-    ## Add recovery counts to tracker
-    n_recovered_m <- n_recovered_m + sum(female[ids_moxi_success] == 0)
-    n_recovered_f <- n_recovered_f + sum(female[ids_moxi_success] == 1)
+    ## Calculate return day for those who failed moxifloxacin treatment
+    dat <- set_event_time_rnorm(
+      dat,
+      at,
+      ids_moxi_failure,
+      "tx_return_day",
+      mean_days_to_clinic_visit
+    )
 
     ## Update quinolone AMR status for those with moxifloxacin failure
-    amr_q[ids_moxi_failure] <- 1 # set to resistant
-    ## WHAT DO WE DO WITH THESE FOLKS????
+    dat <- update_amr_status(dat, at, ids_moxi_failure, "amr_q")
+
+    # STEP 5 THIRD LINE TREATMENT, THEN LOSS TO FOLLOW UP IF THIRD LINE FAILS -----------------------------
+    # STOPPED HERE
   }
 
   if (scenario == 2) {
@@ -228,5 +219,152 @@ mod_clinical_mgen <- function(dat, at) {
   dat <- set_attr(dat, "amr_m", amr_m)
 
   # Return dat object
+  dat
+}
+
+#' @title  Clinical Helper Functions for Treatment and AMR Management
+#' @inheritParams vitals
+#' @param ids A vector of individual IDs for whom the event or treatment is being set or updated.
+#' @return The updated `dat` object with modified attributes based on the specified event or treatment.
+#' @name clinical_helpers
+#'
+NULL
+
+#' @rdname clinical_helpers
+#' @description Sets the time for a specified event for a given set of individuals,
+#' drawing from a normal distribution with the specified mean and standard deviation.
+#' @param event_name The name of the event attribute to be updated for the specified individuals.
+#' @param param1 The mean of the normal distribution from which the event times are drawn.
+#' @param param2 The standard deviation of the normal distribution from which the event times are drawn. Defaults to 1.
+#' @export
+set_event_time_rnorm <- function(
+  dat,
+  at,
+  ids,
+  event_name,
+  param1,
+  param2 = NULL
+) {
+  if (length(ids) > 0) {
+    event_times_from_now <- nnorm(
+      length(ids),
+      mean = param1,
+      sd = ifelse(is.null(param2), 1, param2)
+    ) # assuming a standard deviation of 1 day for return times unless otherwise specified
+    event_attr <- get_attr(dat, event_name)
+    event_attr[ids] <- at + event_times_from_now
+    dat <- set_attr(dat, event_name, event_attr)
+  }
+
+  # Return
+  dat
+}
+
+#' @rdname clinical_helpers
+#' @description Flags the specified individuals as having recovered from treatment.
+#' @param tx_success_attr The name of the attribute indicating treatment success. Defaults to `"tx_success"`.
+#' @param tx_success_val The value to set for successful treatment. Defaults to `1`.
+#' @export
+flag_ids_for_recovery <- function(
+  dat,
+  at,
+  ids,
+  tx_success_attr = "tx_success",
+  tx_success_val = 1
+) {
+  if (length(ids) > 0) {
+    tx_success <- get_attr(dat, tx_success_attr)
+    tx_success[ids] <- tx_success_val
+    dat <- set_attr(dat, tx_success_attr, tx_success)
+  }
+
+  # Return
+  dat
+}
+
+#' @rdname clinical_helpers
+#' @description Flags the specified individuals as having experienced treatment failure.
+#' @param tx_success_attr The name of the attribute indicating treatment success. Defaults to `"tx_success"`.
+#' @param tx_success_val The value to set for treatment failure. Defaults to `0`.
+#' @export
+flag_ids_for_treatment_failure <- function(
+  dat,
+  at,
+  ids,
+  tx_success_attr = "tx_success",
+  tx_success_val = 0
+) {
+  if (length(ids) > 0) {
+    tx_success <- get_attr(dat, tx_success_attr)
+    tx_success[ids] <- tx_success_val
+    dat <- set_attr(dat, tx_success_attr, tx_success)
+  }
+
+  # Return
+  dat
+}
+
+#' @rdname clinical_helpers
+#' @description Updates the antimicrobial resistance (AMR) status for the specified individuals.
+#' @param amr_attr The name of the attribute indicating AMR status.
+#' @param amr_present_val The value to set for individuals with AMR. Defaults to `1`.
+#' @export
+update_amr_status <- function(dat, at, ids, amr_attr, amr_present_val = 1) {
+  if (length(ids) > 0) {
+    amr_status <- get_attr(dat, amr_attr)
+    amr_status[ids] <- amr_present_val
+    dat <- set_attr(dat, amr_attr, amr_status)
+  }
+
+  # Return
+  dat
+}
+
+#' @rdname clinical_helpers
+#' @description Updates the attributes for individuals receiving a new treatment, including current treatment, treatment end day, treatment success, and return day.
+#' @param treatment_type The type of treatment being administered. Should be one of `"doxy"`, `"moxi"`, `"az"`, or `"other"`.
+#' @param curr_tx_attr The name of the attribute indicating the current treatment. Defaults to `"curr_tx"`.
+#' @param tx_end_day_attr The name of the attribute indicating the treatment end day. Defaults to `"tx_end_day"`.
+#' @param tx_success_attr The name of the attribute indicating treatment success. Defaults to `"tx_success"`.
+#' @param tx_return_day_attr The name of the attribute indicating the return day for treatment. Defaults to `"tx_return_day"`.
+#' @export
+update_attrs_for_new_treatment <- function(
+  dat,
+  at,
+  ids,
+  treatment_type,
+  curr_tx_attr = "curr_tx",
+  tx_end_day_attr = "tx_end_day",
+  tx_success_attr = "tx_success",
+  tx_return_day_attr = "tx_return_day"
+) {
+  if (length(ids) > 0) {
+    curr_tx <- get_attr(dat, curr_tx_attr)
+    tx_end_day <- get_attr(dat, tx_end_day_attr)
+    tx_success <- get_attr(dat, tx_success_attr)
+    tx_return_day <- get_attr(dat, tx_return_day_attr)
+
+    tx_duration <- get_param(dat, paste0("duration_", treatment_type, "_tx"))
+
+    treatment <- switch(
+      treatment_type,
+      "doxy" = 1,
+      "moxi" = 2,
+      "az" = 3,
+      "other" = 4
+    )
+
+    curr_tx[ids] <- treatment
+    tx_end_day[ids] <- at + tx_duration
+    tx_success[ids] <- NA
+    tx_return_day[ids] <- NA
+
+    dat <- set_attr(dat, curr_tx_attr, curr_tx)
+    dat <- set_attr(dat, tx_end_day_attr, tx_end_day)
+    dat <- set_attr(dat, tx_success_attr, tx_success)
+    dat <- set_attr(dat, tx_return_day_attr, tx_return_day)
+  }
+
+  # Return
   dat
 }
